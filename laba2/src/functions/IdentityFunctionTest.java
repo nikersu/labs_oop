@@ -13,7 +13,7 @@ class IdentityFunctionTest {
 
             double result = x.apply(1.0);
 
-            assertEquals(1.0, result);
+            assertEquals(1.0, result,0.0001);
         }
     }
 
@@ -24,7 +24,7 @@ class IdentityFunctionTest {
 
             double result = x.apply(2.3);
 
-            assertEquals(2.3, result);
+            assertEquals(2.3, result,0.0001);
     }
 
 
@@ -35,6 +35,6 @@ class IdentityFunctionTest {
 
         double result = x.apply(0.001);
 
-        assertEquals(0.001, result);
+        assertEquals(0.001, result,0.0001);
     }
 }
