@@ -25,5 +25,16 @@ class IdentityFunctionTest {
             double result = x.apply(2.3);
 
             assertEquals(2.3, result);
-        }
     }
+
+
+    @Test
+    void apply_equals() {
+
+        IdentityFunction x = new IdentityFunction();
+
+        double result = x.apply(0.001);
+
+        assertEquals(0.001, result);
+    }
+}
