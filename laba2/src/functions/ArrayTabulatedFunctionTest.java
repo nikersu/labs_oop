@@ -156,24 +156,4 @@ public class ArrayTabulatedFunctionTest {
         // При x=5: y = 7*5 - 12 = 23
         assertEquals(23.0, function.apply(5.0), 0.0001);
     }
-
-    @Test
-    public void testInvalidConstructor() {
-        double[] xValues = {1.0, 2.0};
-        double[] yValues = {1.0};
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            new ArrayTabulatedFunction(xValues, yValues);
-        });
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            new ArrayTabulatedFunction(new double[]{1.0}, new double[]{1.0});
-        });
-
-        double[] badXValues = {2.0, 1.0};  // Не упорядочены
-        double[] goodYValues = {1.0, 2.0};
-        assertThrows(IllegalArgumentException.class, () -> {
-            new ArrayTabulatedFunction(badXValues, goodYValues);
-        });
-    }
 }

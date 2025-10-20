@@ -2,165 +2,167 @@ package functions;
 
 import java.util.Arrays;
 
-public class ArrayTabulatedFunction extends AbstractTabulatedFunction {
-    private final double[] xValues;
-    private final double[] yValues;
-    private final int count;
+public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
+    private double[] xArray;
+    private double[] yArray;
+    private int count;
 
-    public ArrayTabulatedFunction(double[] xValues, double[] yValues) {
-        if (xValues.length != yValues.length) {
-            throw new IllegalArgumentException("Arrays xValues and yValues must have the same length");
-        }
-        if (xValues.length < 2) {
-            throw new IllegalArgumentException("At least 2 points are required");
-        }
-
-        this.count = xValues.length;
-        this.xValues = Arrays.copyOf(xValues, count);
-        this.yValues = Arrays.copyOf(yValues, count);
-
-        //проверка упорядоченности xValues
-        for (int i = 1; i < count; i++) {
-            if (this.xValues[i] <= this.xValues[i - 1]) {
-                throw new IllegalArgumentException("xValues must be strictly increasing");
-            }
-        }
+    public ArrayTabulatedFunction(double[] xArray, double[] yArray) {
+        this.count = xArray.length;
+        this.xArray = Arrays.copyOf(xArray, count);
+        this.yArray = Arrays.copyOf(yArray, count);
     }
-
     public ArrayTabulatedFunction(MathFunction source, double xFrom, double xTo, int count) {
-        if (count < 2) {
-            throw new IllegalArgumentException("At least 2 points are required");
-        }
-
         this.count = count;
-        this.xValues = new double[count];
-        this.yValues = new double[count];
-
+        this.xArray = new double[count];
+        this.yArray = new double[count];
         if (xFrom > xTo) {
+            //меняем местами начальную точку и конечную
             double temp = xFrom;
             xFrom = xTo;
             xTo = temp;
         }
-
         if (xFrom == xTo) {
-            double value = source.apply(xFrom);
-            Arrays.fill(xValues, xFrom);
-            Arrays.fill(yValues, value);
+            //заполняем все х одним значением
+            Arrays.fill(xArray, xFrom);
+            double yArrays = source.apply(xFrom);
+            //заполняем все у одним значением
+            Arrays.fill(yArray, yArrays);
         } else {
+            //иначе выполняем дискретизацию
             double step = (xTo - xFrom) / (count - 1);
             for (int i = 0; i < count; i++) {
-                xValues[i] = xFrom + i * step;
-                yValues[i] = source.apply(xValues[i]);
+                xArray[i] = xFrom + i * step;
+                yArray[i] = source.apply(xArray[i]);
             }
         }
     }
-
     @Override
     public int getCount() {
         return count;
     }
-
     @Override
     public double getX(int index) {
-        if (index < 0 || index >= count) {
-            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + count);
-        }
-        return xValues[index];
+        return xArray[index];
     }
-
     @Override
     public double getY(int index) {
-        if (index < 0 || index >= count) {
-            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + count);
-        }
-        return yValues[index];
+        return yArray[index];
     }
-
     @Override
     public void setY(int index, double value) {
-        if (index < 0 || index >= count) {
-            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + count);
-        }
-        yValues[index] = value;
+        yArray[index] = value;
     }
-
-    @Override
-    public double leftBound() {
-        return xValues[0];
-    }
-
-    @Override
-    public double rightBound() {
-        return xValues[count - 1];
-    }
-
     @Override
     public int indexOfX(double x) {
         for (int i = 0; i < count; i++) {
-            if (Math.abs(xValues[i] - x) < 1e-12) {
+            if (Math.abs(getX(i) - x) < 1e-12) {
                 return i;
             }
         }
         return -1;
     }
-
     @Override
     public int indexOfY(double y) {
         for (int i = 0; i < count; i++) {
-            if (Math.abs(yValues[i] - y) < 1e-12) {
+            if (Math.abs(getY(i) - y) < 1e-12) {
                 return i;
             }
         }
         return -1;
     }
-
     @Override
-    protected int floorIndexOfX(double x) {
-        if (x < xValues[0]) {
-            return 0;
-        }
-        if (x > xValues[count - 1]) {
-            return count;
-        }
-
-        for (int i = 1; i < count; i++) {
-            if (x < xValues[i]) {
-                return i - 1;
+    public double leftBound() {
+        return getX(0);
+    }
+    @Override
+    public double rightBound() {
+        return getX(count - 1);
+    }
+    @Override
+    protected int floorIndexOfX(double x) { //поиск левой границы для интервала х
+        if (x < getX(0)) return 0;
+        if (x > getX(count - 1))return count;
+        //бинарный поиск интервала
+        int left = 0;
+        int right = count - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2; //находим средний индекс
+            if (getX(mid) == x) {
+                return mid;
+            } else if (getX(mid) < x){
+                left = mid + 1;
+            } else {
+                right = mid - 1;
             }
         }
-        return count - 1;
+        return right;
     }
-
     @Override
     protected double extrapolateLeft(double x) {
         if (count == 1) {
-            return yValues[0];
+            return getY(0);
         }
-        return interpolate(x, 0);
+        return interpolate(x, getX(0), getX(1), getY(0), getY(1));
     }
-
     @Override
     protected double extrapolateRight(double x) {
         if (count == 1) {
-            return yValues[0];
+            return getY(0);
         }
-        return interpolate(x, count - 2);
+        return interpolate(x, getX(count - 2), getX(count - 1), getY(count - 2), getY(count - 1));
     }
-
     @Override
     protected double interpolate(double x, int floorIndex) {
         if (count == 1) {
-            return yValues[0];
+            return getY(0);
         }
-        if (floorIndex < 0 || floorIndex >= count - 1) {
-            throw new IllegalArgumentException("Invalid floorIndex: " + floorIndex);
-        }
-
-        double leftX = xValues[floorIndex];
-        double rightX = xValues[floorIndex + 1];
-        double leftY = yValues[floorIndex];
-        double rightY = yValues[floorIndex + 1];
-
-        return interpolate(x, leftX, rightX, leftY, rightY);
+        return interpolate(x, getX(floorIndex), getX(floorIndex+1), getY(floorIndex), getY(floorIndex+1));
     }
+    @Override
+    public void insert(double x, double y) {
+        for (int i = 0; i < count; i++) { //поиск х
+            if (Math.abs (xArray[i] - x) < 1e-12) {
+                yArray[i] = y; //замена значения
+                return;
+            }
+        }
+        int insertIndex = 0; //поиск позиции для вставки
+        while (insertIndex < count && xArray[insertIndex] < x) {
+            insertIndex++;
+        }
+        double[] newXValues = new double[count + 1]; //создание увеличенных массивов
+        double[] newYValues = new double[count + 1];
+
+        System.arraycopy(xArray, 0, newXValues, 0, insertIndex); //копирование эл-тов до позиции вставки
+        System.arraycopy(yArray, 0, newYValues, 0, insertIndex);
+
+        newXValues[insertIndex] = x; //втавка нового элемента
+        newYValues[insertIndex] = y;
+
+        System.arraycopy(xArray, insertIndex, newXValues, insertIndex + 1, count - insertIndex); //копирование эл-тов после поиции вставки
+        System.arraycopy(yArray, insertIndex, newYValues, insertIndex + 1, count - insertIndex);
+
+        xArray = newXValues; //замена старых массивов
+        yArray = newYValues;
+        count++;
+    }
+    @Override
+    public void remove(int index) {
+        //новые массивы уменьшенного размера
+        double[] newXArray = new double[count - 1];
+        double[] newYArray = new double[count - 1];
+
+        //копирует левую часть до удаляемого элемента
+        System.arraycopy(xArray, 0, newXArray, 0, index);
+        System.arraycopy(yArray, 0, newYArray, 0, index);
+
+        //копирует правую часть до удаляемого элемента
+        System.arraycopy(xArray, index + 1, newXArray, index, count - index - 1);
+        System.arraycopy(yArray, index + 1, newYArray, index, count - index - 1);
+        this.xArray = newXArray; //заменяет старые массивы на новые
+        this.yArray = newYArray;
+        this.count--;
+    }
+
 }
