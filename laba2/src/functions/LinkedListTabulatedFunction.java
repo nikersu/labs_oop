@@ -1,4 +1,7 @@
 package functions;
+import exceptions.ArrayIsNotSortedException;
+import exceptions.DifferentLengthOfArraysException;
+import exceptions.InterpolationException;
 
 public class LinkedListTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
     private static class Node { //вспомогательный класс
@@ -48,6 +51,11 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         return current;
     }
     public LinkedListTabulatedFunction(double [] xValues, double [] yValues) { //конструктор из массивов
+        if (xValues.length < 2) {
+            throw new IllegalArgumentException("The table should be at least 2 points long");
+        }
+        checkLengthIsTheSame(xValues, yValues);
+        checkSorted(xValues);
         for (int i = 0; i < xValues.length; i++) {
             addNode(xValues[i], yValues[i]);
         }
@@ -140,8 +148,14 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     }
     @Override
     protected double interpolate(double x, int floorIndex) { //интерполяция (x между двух точек)
-        if (count == 1) {
-            return getY(0);
+        if (floorIndex < 0 || floorIndex >= count - 1) {
+            throw new InterpolationException("Incorrect index for interpolation");
+        }
+        double leftX = getX(floorIndex);
+        double rightX = getX(floorIndex + 1);
+
+        if (x < leftX || x > rightX) {
+            throw new InterpolationException("Point x is outside the interpolation interval");
         }
         return interpolate(x, getX(floorIndex), getX(floorIndex+1), getY(floorIndex), getY(floorIndex+1));
     }

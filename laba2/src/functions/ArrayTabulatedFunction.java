@@ -1,6 +1,7 @@
 package functions;
 
 import java.util.Arrays;
+import exceptions.InterpolationException;
 
 public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
     private double[] xArray;
@@ -8,6 +9,12 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     private int count;
 
     public ArrayTabulatedFunction(double[] xArray, double[] yArray) {
+        if (xArray.length < 2) {
+            throw new IllegalArgumentException("The table should be at least 2 points long");
+        }
+        checkLengthIsTheSame(xArray, yArray);
+        checkSorted(xArray);
+
         this.count = xArray.length;
         this.xArray = Arrays.copyOf(xArray, count);
         this.yArray = Arrays.copyOf(yArray, count);
@@ -114,9 +121,16 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     }
     @Override
     protected double interpolate(double x, int floorIndex) {
-        if (count == 1) {
-            return getY(0);
+        if (floorIndex < 0 || floorIndex >= count - 1) {
+            throw new InterpolationException("Incorrect index for interpolation");
         }
+        double leftX = getX(floorIndex);
+        double rightX = getX(floorIndex + 1);
+
+        if (x < leftX || x > rightX) {
+            throw new InterpolationException("Point x is outside the interpolation interval");
+        }
+
         return interpolate(x, getX(floorIndex), getX(floorIndex+1), getY(floorIndex), getY(floorIndex+1));
     }
     @Override
@@ -137,10 +151,10 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         System.arraycopy(xArray, 0, newXValues, 0, insertIndex); //копирование эл-тов до позиции вставки
         System.arraycopy(yArray, 0, newYValues, 0, insertIndex);
 
-        newXValues[insertIndex] = x; //втавка нового элемента
+        newXValues[insertIndex] = x; //вставка нового элемента
         newYValues[insertIndex] = y;
 
-        System.arraycopy(xArray, insertIndex, newXValues, insertIndex + 1, count - insertIndex); //копирование эл-тов после поиции вставки
+        System.arraycopy(xArray, insertIndex, newXValues, insertIndex + 1, count - insertIndex); //копирование эл-тов после позиции вставки
         System.arraycopy(yArray, insertIndex, newYValues, insertIndex + 1, count - insertIndex);
 
         xArray = newXValues; //замена старых массивов
