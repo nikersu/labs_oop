@@ -1,7 +1,7 @@
 package functions;
-import exceptions.ArrayIsNotSortedException;
-import exceptions.DifferentLengthOfArraysException;
+
 import exceptions.InterpolationException;
+import java.util.Iterator;
 
 public class LinkedListTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
     private static class Node { //вспомогательный класс
@@ -254,5 +254,9 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         if (count == 0) { //если список стал пустым
             head = null;
         }
+    }
+    @Override
+    public Iterator<Point> iterator() {
+        throw new UnsupportedOperationException();
     }
 }

@@ -2,6 +2,7 @@ package functions;
 
 import java.util.Arrays;
 import exceptions.InterpolationException;
+import java.util.Iterator;
 
 public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
     private double[] xArray;
@@ -177,6 +178,10 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         this.xArray = newXArray; //заменяет старые массивы на новые
         this.yArray = newYArray;
         this.count--;
+    }
+    @Override
+    public Iterator<Point> iterator() {
+        throw new UnsupportedOperationException();
     }
 
 }
