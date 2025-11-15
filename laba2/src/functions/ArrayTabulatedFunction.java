@@ -3,6 +3,7 @@ package functions;
 import java.util.Arrays;
 import exceptions.InterpolationException;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
     private double[] xArray;
@@ -181,7 +182,24 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     }
     @Override
     public Iterator<Point> iterator() {
-        throw new UnsupportedOperationException();
+        return new Iterator<>() { // возвращаем анонимный класс, реализующий интерфейс
+            private int i = 0;
+            // проверка на наличие элементов для итерации
+            @Override
+            public boolean hasNext() {
+                return i < count;
+            }
+            // возвращает следующий элемент итерации
+            @Override
+            public Point next() {
+                if (!hasNext()) { // если элементов больше нет - бросаем исключение
+                    throw new NoSuchElementException();
+                }
+                Point point = new Point(xArray[i], yArray[i]);
+                i++;
+                return point;
+            }
+        };
     }
-
 }
+
