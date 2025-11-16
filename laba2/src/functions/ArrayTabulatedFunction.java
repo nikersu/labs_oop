@@ -8,21 +8,11 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     private int count;
 
     public ArrayTabulatedFunction(double[] xArray, double[] yArray) {
-        if (xArray.length != yArray.length) {
-            throw new IllegalArgumentException("Arrays must have the same length");
-        }
-        if (xArray.length < 2) {
-            throw new IllegalArgumentException("At least 2 points required");
-        }
         this.count = xArray.length;
         this.xArray = Arrays.copyOf(xArray, count);
         this.yArray = Arrays.copyOf(yArray, count);
     }
-
     public ArrayTabulatedFunction(MathFunction source, double xFrom, double xTo, int count) {
-        if (count < 2) {
-            throw new IllegalArgumentException("At least 2 points required");
-        }
         this.count = count;
         this.xArray = new double[count];
         this.yArray = new double[count];
@@ -47,36 +37,22 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
             }
         }
     }
-
     @Override
     public int getCount() {
         return count;
     }
-
     @Override
     public double getX(int index) {
-        if (index < 0 || index >= count) {
-            throw new IllegalArgumentException("Index out of bounds: " + index);
-        }
         return xArray[index];
     }
-
     @Override
     public double getY(int index) {
-        if (index < 0 || index >= count) {
-            throw new IllegalArgumentException("Index out of bounds: " + index);
-        }
         return yArray[index];
     }
-
     @Override
     public void setY(int index, double value) {
-        if (index < 0 || index >= count) {
-            throw new IllegalArgumentException("Index out of bounds: " + index);
-        }
         yArray[index] = value;
     }
-
     @Override
     public int indexOfX(double x) {
         for (int i = 0; i < count; i++) {
@@ -86,7 +62,6 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         }
         return -1;
     }
-
     @Override
     public int indexOfY(double y) {
         for (int i = 0; i < count; i++) {
@@ -96,29 +71,24 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         }
         return -1;
     }
-
     @Override
     public double leftBound() {
         return getX(0);
     }
-
     @Override
     public double rightBound() {
         return getX(count - 1);
     }
-
     @Override
     protected int floorIndexOfX(double x) { //поиск левой границы для интервала х
-        if (x < getX(0)) {
-            throw new IllegalArgumentException("x is less than left bound: " + x);
-        }
-        if (x > getX(count - 1)) return count;
+        if (x < getX(0)) return 0;
+        if (x > getX(count - 1))return count;
         //бинарный поиск интервала
         int left = 0;
         int right = count - 1;
         while (left <= right) {
             int mid = left + (right - left) / 2; //находим средний индекс
-            if (Math.abs(getX(mid) - x) < 1e-12) {
+            if (getX(mid) == x) {
                 return mid;
             } else if (getX(mid) < x){
                 left = mid + 1;
@@ -128,28 +98,27 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         }
         return right;
     }
-
     @Override
     protected double extrapolateLeft(double x) {
-        // Убрана проверка count == 1, так как теперь гарантируется count >= 2
+        if (count == 1) {
+            return getY(0);
+        }
         return interpolate(x, getX(0), getX(1), getY(0), getY(1));
     }
-
     @Override
     protected double extrapolateRight(double x) {
-        // Убрана проверка count == 1, так как теперь гарантируется count >= 2
+        if (count == 1) {
+            return getY(0);
+        }
         return interpolate(x, getX(count - 2), getX(count - 1), getY(count - 2), getY(count - 1));
     }
-
     @Override
     protected double interpolate(double x, int floorIndex) {
-        // Убрана проверка count == 1, так как теперь гарантируется count >= 2
-        if (floorIndex < 0 || floorIndex >= count - 1) {
-            throw new IllegalArgumentException("Invalid floor index: " + floorIndex);
+        if (count == 1) {
+            return getY(0);
         }
         return interpolate(x, getX(floorIndex), getX(floorIndex+1), getY(floorIndex), getY(floorIndex+1));
     }
-
     @Override
     public void insert(double x, double y) {
         for (int i = 0; i < count; i++) { //поиск х
@@ -178,16 +147,8 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         yArray = newYValues;
         count++;
     }
-
     @Override
     public void remove(int index) {
-        if (index < 0 || index >= count) {
-            throw new IllegalArgumentException("Index out of bounds: " + index);
-        }
-        if (count == 2) {
-            throw new IllegalStateException("Cannot remove element - minimum 2 points required");
-        }
-
         //новые массивы уменьшенного размера
         double[] newXArray = new double[count - 1];
         double[] newYArray = new double[count - 1];
@@ -203,4 +164,5 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         this.yArray = newYArray;
         this.count--;
     }
+
 }
