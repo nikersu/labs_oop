@@ -104,7 +104,9 @@ public class ArrayTabulatedFunctionTest {
         double[] yValues = {1.0, 9.0, 25.0, 49.0};
         ArrayTabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
 
-        assertEquals(0, function.floorIndexOfX(0.5));  // Меньше всех
+        // Теперь при x < leftBound должно выбрасываться исключение
+        assertThrows(IllegalArgumentException.class, () -> function.floorIndexOfX(0.5));
+
         assertEquals(0, function.floorIndexOfX(1.0));  // Равно первому
         assertEquals(0, function.floorIndexOfX(2.0));  // Между 1 и 3
         assertEquals(1, function.floorIndexOfX(4.0));  // Между 3 и 5
@@ -155,5 +157,126 @@ public class ArrayTabulatedFunctionTest {
         // Линия через (3,9) и (4,16): y = 7x - 12
         // При x=5: y = 7*5 - 12 = 23
         assertEquals(23.0, function.apply(5.0), 0.0001);
+    }
+
+    @Test
+    public void testConstructorWithSinglePointThrowsException() {
+        double[] x = {1.0};
+        double[] y = {2.0};
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            new ArrayTabulatedFunction(x, y);
+        });
+    }
+
+    @Test
+    public void testConstructorWithDifferentLengthsThrowsException() {
+        double[] x = {1.0, 2.0};
+        double[] y = {1.0};
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            new ArrayTabulatedFunction(x, y);
+        });
+    }
+
+    @Test
+    public void testConstructorWithFunctionSinglePointThrowsException() {
+        MathFunction source = new SqrFunction();
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            new ArrayTabulatedFunction(source, 0.0, 4.0, 1);
+        });
+    }
+
+    @Test
+    public void testGetXWithNegativeIndexThrowsException() {
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {1.0, 4.0, 9.0};
+        ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            function.getX(-1);
+        });
+    }
+
+    @Test
+    public void testGetXWithIndexEqualToCountThrowsException() {
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {1.0, 4.0, 9.0};
+        ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            function.getX(3);
+        });
+    }
+
+    @Test
+    public void testSetYWithInvalidIndexThrowsException() {
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {1.0, 4.0, 9.0};
+        ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            function.setY(5, 10.0);
+        });
+    }
+
+    @Test
+    public void testFloorIndexOfXLessThanLeftBoundThrowsException() {
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {1.0, 4.0, 9.0};
+        ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            function.floorIndexOfX(0.5);
+        });
+    }
+
+    @Test
+    public void testInterpolateWithInvalidFloorIndexThrowsException() {
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {1.0, 4.0, 9.0};
+        ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            function.interpolate(2.5, 2); // floorIndex должен быть < count-1
+        });
+    }
+
+    @Test
+    public void testRemoveWithInvalidIndexThrowsException() {
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {1.0, 4.0, 9.0};
+        ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            function.remove(3);
+        });
+    }
+
+    @Test
+    public void testRemoveWhenOnlyTwoPointsThrowsException() {
+        double[] x = {1.0, 2.0};
+        double[] y = {1.0, 4.0};
+        ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
+
+        assertThrows(IllegalStateException.class, () -> {
+            function.remove(0); // попытка удалить при count=2
+        });
+    }
+
+    @Test
+    public void testValidOperationsStillWorkAfterExceptionHandling() {
+        double[] x = {1.0, 2.0, 3.0};
+        double[] y = {1.0, 4.0, 9.0};
+        ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
+
+        assertEquals(2.0, function.getX(1), 1e-10);
+        assertEquals(4.0, function.getY(1), 1e-10);
+        assertEquals(1, function.indexOfX(2.0));
+        assertEquals(1, function.floorIndexOfX(2.5));
+
+
+        assertEquals(6.5, function.apply(2.5), 1e-10);
     }
 }

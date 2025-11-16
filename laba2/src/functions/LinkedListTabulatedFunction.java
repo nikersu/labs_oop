@@ -11,48 +11,26 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
             this.y = y;
         }
     }
+
     private Node head;
-    protected int count;
-    private void addNode(double x, double y) { //метод для добавления узла в конец списка
-        Node newNode = new Node(x, y);
-        if (head == null) { //если список пустой
-            head = newNode;
-            head.next = head;
-            head.prev = head;
+    private int count;
+
+    public LinkedListTabulatedFunction(double[] xValues, double[] yValues) {
+        if (xValues.length != yValues.length) {
+            throw new IllegalArgumentException("Arrays must have the same length");
         }
-        else {
-            Node last = head.prev;
-            last.next = newNode;
-            newNode.prev = last;
-            newNode.next = head;
-            head.prev = newNode;
+        if (xValues.length < 2) {
+            throw new IllegalArgumentException("At least 2 points required");
         }
-        count ++;
-    }
-    private Node getNode(int index) { //метод для получения узла по индексу
-        if (index < 0 || index >= count) {
-            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + count);
-        }
-        Node current;
-        if (index <= count / 2) {
-            current = head;
-            for (int i = 0; i < index; i++) {
-                current = current.next;
-            }
-        } else {
-            current = head.prev;
-            for (int i = count - 1; i > index; i--) {
-                current = current.prev;
-            }
-        }
-        return current;
-    }
-    public LinkedListTabulatedFunction(double [] xValues, double [] yValues) { //конструктор из массивов
         for (int i = 0; i < xValues.length; i++) {
             addNode(xValues[i], yValues[i]);
         }
     }
-    public LinkedListTabulatedFunction(MathFunction source, double xFrom, double xTo, int count) { // конструктор: дискретизация
+
+    public LinkedListTabulatedFunction(MathFunction source, double xFrom, double xTo, int count) {
+        if (count < 2) {
+            throw new IllegalArgumentException("At least 2 points required");
+        }
         if (xFrom > xTo) {
             double temp = xFrom;
             xFrom = xTo;
@@ -74,19 +52,64 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
             }
         }
     }
+
+    private void addNode(double x, double y) { //метод для добавления узла в конец списка
+        Node newNode = new Node(x, y);
+        if (head == null) { //если список пустой
+            head = newNode;
+            head.next = head;
+            head.prev = head;
+        }
+        else {
+            Node last = head.prev;
+            last.next = newNode;
+            newNode.prev = last;
+            newNode.next = head;
+            head.prev = newNode;
+        }
+        count++;
+    }
+
+    private Node getNode(int index) { //метод для получения узла по индексу
+        if (index < 0 || index >= count) {
+            throw new IllegalArgumentException("Index out of bounds: " + index);
+        }
+        Node current;
+        if (index <= count / 2) {
+            current = head;
+            for (int i = 0; i < index; i++) {
+                current = current.next;
+            }
+        } else {
+            current = head.prev;
+            for (int i = count - 1; i > index; i--) {
+                current = current.prev;
+            }
+        }
+        return current;
+    }
+
     @Override
     public int getCount() {
         return count;
     }
+
     @Override
     public double leftBound() {
+        if (head == null) {
+            throw new IllegalStateException("Function is empty");
+        }
         return head.x;
     }
 
     @Override
     public double rightBound() {
+        if (head == null) {
+            throw new IllegalStateException("Function is empty");
+        }
         return head.prev.x;
     }
+
     @Override
     public double getX(int index) {
         return getNode(index).x;
@@ -101,11 +124,12 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     public void setY(int index, double value) {
         getNode(index).y = value;
     }
+
     @Override
     public int indexOfX(double x) {
         Node current = head;
         for (int i = 0; i < count; i++) {
-            if (Double.compare(current.x, x) == 0) {
+            if (Math.abs(current.x - x) < 1e-12) {
                 return i;
             }
             current = current.next;
@@ -117,70 +141,78 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     public int indexOfY(double y) {
         Node current = head;
         for (int i = 0; i < count; i++) {
-            if (Double.compare(current.y, y) == 0) {
+            if (Math.abs(current.y - y) < 1e-12) {
                 return i;
             }
             current = current.next;
         }
         return -1;
     }
+
     @Override
-    protected double extrapolateLeft(double x) { //экстраполяция слева (x<leftBound)
-        if (count == 1) {
-            return getY(0);
-        }
+    protected double extrapolateLeft(double x) {
+        // Убрана проверка count == 1, так как теперь гарантируется count >= 2
         return interpolate(x, getX(0), getX(1), getY(0), getY(1));
     }
+
     @Override
-    protected double extrapolateRight(double x) { //экстраполяция справа (x>rightBound)
-        if (count == 1) {
-            return getY(0);
-        }
+    protected double extrapolateRight(double x) {
+        // Убрана проверка count == 1, так как теперь гарантируется count >= 2
         return interpolate(x, getX(count - 2), getX(count - 1), getY(count - 2), getY(count - 1));
     }
+
     @Override
-    protected double interpolate(double x, int floorIndex) { //интерполяция (x между двух точек)
-        if (count == 1) {
-            return getY(0);
+    protected double interpolate(double x, int floorIndex) {
+        // Убрана проверка count == 1, так как теперь гарантируется count >= 2
+        if (floorIndex < 0 || floorIndex >= count - 1) {
+            throw new IllegalArgumentException("Invalid floor index: " + floorIndex);
         }
-        return interpolate(x, getX(floorIndex), getX(floorIndex+1), getY(floorIndex), getY(floorIndex+1));
+        Node leftNode = getNode(floorIndex);
+        Node rightNode = leftNode.next;
+        return interpolate(x, leftNode.x, rightNode.x, leftNode.y, rightNode.y);
     }
+
     @Override
     protected int floorIndexOfX(double x) {
-        if (x < getX(0)) return 0;
-        if (x > getX(count - 1))return count;
-        int left = 0;
-        int right = count - 1;
-        while (left <= right) {
-            int mid = left + (right - left) / 2;
-            if (getX(mid) == x) {
-                return mid;
-            } else if (getX(mid) < x){
-                left = mid + 1;
-            } else {
-                right = mid - 1;
-            }
+        if (x < getX(0)) {
+            throw new IllegalArgumentException("x is less than left bound: " + x);
         }
-        return right;
+        if (x > getX(count - 1)) {
+            return count;
+        }
+
+        // Линейный поиск для связного списка
+        Node current = head;
+        for (int i = 0; i < count - 1; i++) {
+            // Если x находится между current.x и current.next.x, или равен current.x
+            if (x >= current.x && x < current.next.x) {
+                return i;
+            }
+            current = current.next;
+        }
+
+        // Если x равен последнему элементу или больше всех (но мы уже проверили > getX(count-1))
+        return count - 1;
     }
+
     @Override
     public void insert(double x, double y) {
+        // Проверяем, существует ли уже узел с таким x
+        int existingIndex = indexOfX(x);
+        if (existingIndex != -1) {
+            setY(existingIndex, y);
+            return;
+        }
+
         // если список пустой, просто добавляем узел
         if (head == null) {
             addNode(x, y);
             return;
         }
-        // проверяем, существует ли уже узел с таким x
-        for (int i = 0; i < count; i++) {
-            Node currentNode = getNode(i);
-            if (Math.abs(currentNode.x - x) < 1e-10) {
-                // если нашли узел с таким x, обновляем y и выходим
-                currentNode.y = y;
-                return;
-            }
-        }
+
         // создаем новый узел
         Node newNode = new Node(x, y);
+
         // если новый узел должен быть в начале списка
         if (x < head.x) {
             Node last = head.prev;
@@ -195,6 +227,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
             count++;
             return;
         }
+
         // если новый узел должен быть в конце списка
         if (x > head.prev.x) {
             Node last = head.prev;
@@ -207,6 +240,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
             count++;
             return;
         }
+
         // поиск места для вставки в середину списка
         Node current = head;
         for (int i = 0; i < count; i++) {
@@ -223,20 +257,31 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
             current = current.next;
         }
     }
+
     @Override
     public void remove(int index) { //метод для удаления узлов
-        if (count == 1) {           //если в списке один узел
+        if (index < 0 || index >= count) {
+            throw new IllegalArgumentException("Index out of bounds: " + index);
+        }
+        if (count == 2) {
+            throw new IllegalStateException("Cannot remove element - minimum 2 points required");
+        }
+
+        if (count == 1) { //если в списке один узел
             head = null;
             count = 0;
             return;
         }
+
         Node nodeToRemove = getNode(index);
         if (nodeToRemove == head) { //если удаляем голову
             head = head.next;
         }
+
         nodeToRemove.prev.next = nodeToRemove.next; //переписываем узлы
         nodeToRemove.next.prev = nodeToRemove.prev;
         count--;
+
         if (count == 0) { //если список стал пустым
             head = null;
         }
