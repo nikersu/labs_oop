@@ -7,6 +7,7 @@ import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import functions.Point;
 
 public final class FunctionsIO {
@@ -34,5 +35,10 @@ public final class FunctionsIO {
             yValues[i] = dataInputStream.readDouble();
         }
         return factory.create(xValues, yValues);
+    }
+
+    public static TabulatedFunction deserialize(BufferedInputStream stream) throws IOException, ClassNotFoundException {
+        ObjectInputStream objectInputStream = new ObjectInputStream(stream);
+        return (TabulatedFunction) objectInputStream.readObject();
     }
 }
