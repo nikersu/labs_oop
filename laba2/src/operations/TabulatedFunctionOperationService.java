@@ -65,10 +65,4 @@ public class TabulatedFunctionOperationService {
     public TabulatedFunction subtract(TabulatedFunction a, TabulatedFunction b) {
         return doOperation(a, b, (double f, double s) -> f - s); // вычитание
     }
-    public TabulatedFunction multiply(TabulatedFunction a, TabulatedFunction b) {
-        return doOperation(a, b, (double f, double s) -> f * s); // умножение
-    }
-    public TabulatedFunction divide(TabulatedFunction a, TabulatedFunction b) {
-        return doOperation(a, b, (double f, double s) -> f / s); // деление
-    }
 }
