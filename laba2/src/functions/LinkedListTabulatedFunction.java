@@ -130,6 +130,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         }
         getNode(index).y = value;
     }
+
     @Override
     public int indexOfX(double x) {
         Node current = head;
@@ -153,14 +154,17 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         }
         return -1;
     }
+
     @Override
     protected double extrapolateLeft(double x) { //экстраполяция слева (x<leftBound)
         return interpolate(x, getX(0), getX(1), getY(0), getY(1));
     }
+
     @Override
     protected double extrapolateRight(double x) { //экстраполяция справа (x>rightBound)
         return interpolate(x, getX(count - 2), getX(count - 1), getY(count - 2), getY(count - 1));
     }
+
     @Override
     protected double interpolate(double x, int floorIndex) {
         if (floorIndex < 0 || floorIndex >= count - 1) {
@@ -176,6 +180,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         // вызов метода интерполяции с четырьмя параметрами
         return interpolate(x, leftX, rightX, getY(floorIndex), getY(floorIndex + 1));
     }
+
     @Override
     protected int floorIndexOfX(double x) {
         if (x < leftBound()) {
@@ -197,6 +202,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         }
         return right;
     }
+
     @Override
     public void insert(double x, double y) {
         // Проверяем, существует ли уже узел с таким x
@@ -254,6 +260,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
             current = current.next;
         }
     }
+
     @Override
     public void remove(int index) { //метод для удаления узлов
         if (index < 0 || index >= count) {
@@ -278,22 +285,49 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
             head = null;
         }
     }
-    public Iterator<Point> iterator(){
-        return new Iterator<>() {
-            private Node node = head;
-            private int currentIndex = 0;
+
+//    public Iterator<Point> iterator(){
+//        return new Iterator<>() {
+//            private Node node = head;
+//            private int currentIndex = 0;
+//            @Override
+//            public boolean hasNext() {
+//                return currentIndex < count;
+//            }
+//            @Override
+//            public Point next() {
+//                if (!(hasNext())) {
+//                    throw new NoSuchElementException();
+//                }
+//                Point point = new Point(node.x, node.y);
+//                node = node.next;
+//                currentIndex++;
+//                return point;
+//            }
+//        };
+//    }
+
+    @Override
+    public Iterator<Point> iterator() {
+        return new Iterator<Point>() {
+            private Node currentNode = head;  // каждый итератор получает свою копию ссылки
+            private int elementsReturned = 0; // счетчик для этого конкретного итератора
+
             @Override
             public boolean hasNext() {
-                return currentIndex < count;
+                return elementsReturned < count;
             }
+
             @Override
             public Point next() {
-                if (!(hasNext())) {
-                    throw new NoSuchElementException();
+                if (!hasNext()) {
+                    throw new NoSuchElementException("No more points in tabulated function");
                 }
-                Point point = new Point(node.x, node.y);
-                node = node.next;
-                currentIndex++;
+
+                Point point = new Point(currentNode.x, currentNode.y);
+                currentNode = currentNode.next;  // переходим к следующему узлу
+                elementsReturned++;              // увеличиваем счетчик этого итератора
+
                 return point;
             }
         };

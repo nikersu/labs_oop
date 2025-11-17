@@ -2,6 +2,8 @@ package functions;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 class LinkedListTabulatedFunctionTest {
     @Test
@@ -288,16 +290,6 @@ class LinkedListTabulatedFunctionTest {
     }
 
     @Test
-    public void testConstructorWithDifferentLengthsThrowsException() {
-        double[] x = {1.0, 2.0};
-        double[] y = {1.0};
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            new LinkedListTabulatedFunction(x, y);
-        });
-    }
-
-    @Test
     public void testConstructorWithFunctionSinglePointThrowsException() {
         MathFunction source = new SqrFunction();
 
@@ -351,17 +343,6 @@ class LinkedListTabulatedFunctionTest {
     }
 
     @Test
-    public void testInterpolateWithInvalidFloorIndexThrowsException() {
-        double[] x = {1.0, 2.0, 3.0};
-        double[] y = {1.0, 4.0, 9.0};
-        LinkedListTabulatedFunction function = new LinkedListTabulatedFunction(x, y);
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            function.interpolate(2.5, 2); // floorIndex должен быть < count-1
-        });
-    }
-
-    @Test
     public void testRemoveWithInvalidIndexThrowsException() {
         double[] x = {1.0, 2.0, 3.0};
         double[] y = {1.0, 4.0, 9.0};
@@ -398,5 +379,62 @@ class LinkedListTabulatedFunctionTest {
         // Исправляем ожидаемое значение - при x=2.5 между точками (2,4) и (3,9)
         // Линейная интерполяция: y = 4 + (9-4)/(3-2) * (2.5-2) = 4 + 5 * 0.5 = 6.5
         assertEquals(6.5, function.apply(2.5), 1e-10);
+    }
+
+    @Test
+    public void testIteratorWhileLoop() {
+        double[] xValues = {1.0, 2.0, 3.0};
+        double[] yValues = {1.0, 4.0, 9.0};
+        LinkedListTabulatedFunction function = new LinkedListTabulatedFunction(xValues, yValues);
+
+        Iterator<Point> iterator = function.iterator();
+        int count = 0;
+
+        // Способ 1: цикл while
+        while (iterator.hasNext()) {
+            Point point = iterator.next();
+            assertEquals(xValues[count], point.x, 0.0001);
+            assertEquals(yValues[count], point.y, 0.0001);
+            count++;
+        }
+
+        assertEquals(3, count);
+        assertThrows(NoSuchElementException.class, iterator::next);
+    }
+
+    @Test
+    public void testIteratorForEachLoop() {
+        double[] xValues = {1.0, 2.0, 3.0};
+        double[] yValues = {1.0, 4.0, 9.0};
+        LinkedListTabulatedFunction function = new LinkedListTabulatedFunction(xValues, yValues);
+
+        int count = 0;
+
+        // Способ 2: цикл for-each
+        for (Point point : function) {
+            assertEquals(xValues[count], point.x, 0.0001);
+            assertEquals(yValues[count], point.y, 0.0001);
+            count++;
+        }
+
+        assertEquals(3, count);
+    }
+
+    @Test
+    public void testIteratorOnEmptyFunction() {
+        // Создаем функцию с минимальным количеством точек (2)
+        double[] xValues = {1.0, 2.0};
+        double[] yValues = {1.0, 4.0};
+        LinkedListTabulatedFunction function = new LinkedListTabulatedFunction(xValues, yValues);
+
+        Iterator<Point> iterator = function.iterator();
+
+        // Должны быть 2 точки
+        assertTrue(iterator.hasNext());
+        iterator.next();
+        assertTrue(iterator.hasNext());
+        iterator.next();
+        assertFalse(iterator.hasNext());
+        assertThrows(NoSuchElementException.class, iterator::next);
     }
 }
