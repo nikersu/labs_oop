@@ -192,10 +192,7 @@ public class ArrayTabulatedFunctionTest {
     public void testConstructorWithSinglePointThrowsException() {
         double[] x = {1.0};
         double[] y = {2.0};
-
-        assertThrows(IllegalArgumentException.class, () -> {
-            new ArrayTabulatedFunction(x, y);
-        });
+        assertThrows(IllegalArgumentException.class, () -> new ArrayTabulatedFunction(x, y));
     }
 
     @Test
@@ -203,18 +200,14 @@ public class ArrayTabulatedFunctionTest {
         double[] x = {1.0, 2.0};
         double[] y = {1.0};
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            new ArrayTabulatedFunction(x, y);
-        });
+        assertThrows(IllegalArgumentException.class, () -> new ArrayTabulatedFunction(x, y));
     }
 
     @Test
     public void testConstructorWithFunctionSinglePointThrowsException() {
         MathFunction source = new SqrFunction();
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            new ArrayTabulatedFunction(source, 0.0, 4.0, 1);
-        });
+        assertThrows(IllegalArgumentException.class, () -> new ArrayTabulatedFunction(source, 0.0, 4.0, 1));
     }
 
     @Test
@@ -223,9 +216,7 @@ public class ArrayTabulatedFunctionTest {
         double[] y = {1.0, 4.0, 9.0};
         ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            function.getX(-1);
-        });
+        assertThrows(IllegalArgumentException.class, () -> function.getX(-1));
     }
 
     @Test
@@ -234,9 +225,7 @@ public class ArrayTabulatedFunctionTest {
         double[] y = {1.0, 4.0, 9.0};
         ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            function.getX(3);
-        });
+        assertThrows(IllegalArgumentException.class, () -> function.getX(3));
     }
 
     @Test
@@ -245,9 +234,7 @@ public class ArrayTabulatedFunctionTest {
         double[] y = {1.0, 4.0, 9.0};
         ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            function.setY(5, 10.0);
-        });
+        assertThrows(IllegalArgumentException.class, () -> function.setY(5, 10.0));
     }
 
     @Test
@@ -256,9 +243,7 @@ public class ArrayTabulatedFunctionTest {
         double[] y = {1.0, 4.0, 9.0};
         ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            function.floorIndexOfX(0.5);
-        });
+        assertThrows(IllegalArgumentException.class, () -> function.floorIndexOfX(0.5));
     }
 
     @Test
@@ -267,9 +252,7 @@ public class ArrayTabulatedFunctionTest {
         double[] y = {1.0, 4.0, 9.0};
         ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            function.interpolate(2.5, 2); // floorIndex должен быть < count-1
-        });
+        assertThrows(IllegalArgumentException.class, () -> function.interpolate(2.5, 2));
     }
 
     @Test
@@ -278,9 +261,7 @@ public class ArrayTabulatedFunctionTest {
         double[] y = {1.0, 4.0, 9.0};
         ArrayTabulatedFunction function = new ArrayTabulatedFunction(x, y);
 
-        assertThrows(IllegalArgumentException.class, () -> {
-            function.remove(3);
-        });
+        assertThrows(IllegalArgumentException.class, () -> function.remove(3));
     }
 
     @Test
