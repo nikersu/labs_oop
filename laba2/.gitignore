@@ -1,0 +1,14 @@
+# Скомпилированные классы
+*.class
+out/
+build/
+target/
+
+# Файлы IDE
+.idea/
+*.iml
+*.iws
+
+# Системные файлы
+.DS_Store
+Thumbs.db
