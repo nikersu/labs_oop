@@ -1,5 +1,9 @@
 package functions;
 
+import exceptions.InterpolationException;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 public class LinkedListTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
     private static class Node { //вспомогательный класс
         public double x;
@@ -48,11 +52,21 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
         return current;
     }
     public LinkedListTabulatedFunction(double [] xValues, double [] yValues) { //конструктор из массивов
+        if (xValues.length < 2) {
+            throw new IllegalArgumentException("The table should be at least 2 points long");
+        }
+
+        checkLengthIsTheSame(xValues, yValues);
+        checkSorted(xValues);
+
         for (int i = 0; i < xValues.length; i++) {
             addNode(xValues[i], yValues[i]);
         }
     }
     public LinkedListTabulatedFunction(MathFunction source, double xFrom, double xTo, int count) { // конструктор: дискретизация
+        if (count < 2) {
+            throw new IllegalArgumentException("The number of points must be at least 2");
+        }
         if (xFrom > xTo) {
             double temp = xFrom;
             xFrom = xTo;
@@ -80,32 +94,47 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     }
     @Override
     public double leftBound() {
+        if (head == null) {
+            throw new IllegalStateException("Function is empty");
+        }
         return head.x;
     }
 
     @Override
     public double rightBound() {
+        if (head == null) {
+            throw new IllegalStateException("Function is empty");
+        }
         return head.prev.x;
     }
     @Override
     public double getX(int index) {
+        if (index < 0 || index >= count) {
+            throw new IllegalArgumentException("The index is out of range");
+        }
         return getNode(index).x;
     }
 
     @Override
     public double getY(int index) {
+        if (index < 0 || index >= count) {
+            throw new IllegalArgumentException("The index is out of range");
+        }
         return getNode(index).y;
     }
 
     @Override
     public void setY(int index, double value) {
+        if (index < 0 || index >= count) {
+            throw new IllegalArgumentException("The index is out of range");
+        }
         getNode(index).y = value;
     }
     @Override
     public int indexOfX(double x) {
         Node current = head;
         for (int i = 0; i < count; i++) {
-            if (Double.compare(current.x, x) == 0) {
+            if (Math.abs(current.x - x) < 1e-12) {
                 return i;
             }
             current = current.next;
@@ -117,7 +146,7 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     public int indexOfY(double y) {
         Node current = head;
         for (int i = 0; i < count; i++) {
-            if (Double.compare(current.y, y) == 0) {
+            if (Math.abs(current.y - y) < 1e-12) {
                 return i;
             }
             current = current.next;
@@ -126,27 +155,32 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     }
     @Override
     protected double extrapolateLeft(double x) { //экстраполяция слева (x<leftBound)
-        if (count == 1) {
-            return getY(0);
-        }
         return interpolate(x, getX(0), getX(1), getY(0), getY(1));
     }
     @Override
     protected double extrapolateRight(double x) { //экстраполяция справа (x>rightBound)
-        if (count == 1) {
-            return getY(0);
-        }
         return interpolate(x, getX(count - 2), getX(count - 1), getY(count - 2), getY(count - 1));
     }
     @Override
-    protected double interpolate(double x, int floorIndex) { //интерполяция (x между двух точек)
-        if (count == 1) {
-            return getY(0);
+    protected double interpolate(double x, int floorIndex) {
+        if (floorIndex < 0 || floorIndex >= count - 1) {
+            throw new InterpolationException("Incorrect index for interpolation");
         }
-        return interpolate(x, getX(floorIndex), getX(floorIndex+1), getY(floorIndex), getY(floorIndex+1));
+
+        double leftX = getX(floorIndex);
+        double rightX = getX(floorIndex + 1);
+
+        if (x < leftX || x > rightX) {
+            throw new InterpolationException("Point x is outside the interpolation interval");
+        }
+        // вызов метода интерполяции с четырьмя параметрами
+        return interpolate(x, leftX, rightX, getY(floorIndex), getY(floorIndex + 1));
     }
     @Override
     protected int floorIndexOfX(double x) {
+        if (x < leftBound()) {
+            throw new IllegalArgumentException("x is less than the left border");
+        }
         if (x < getX(0)) return 0;
         if (x > getX(count - 1))return count;
         int left = 0;
@@ -165,19 +199,16 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     }
     @Override
     public void insert(double x, double y) {
+        // Проверяем, существует ли уже узел с таким x
+        int existingIndex = indexOfX(x);
+        if (existingIndex != -1) {
+            setY(existingIndex, y);
+            return;
+        }
         // если список пустой, просто добавляем узел
         if (head == null) {
             addNode(x, y);
             return;
-        }
-        // проверяем, существует ли уже узел с таким x
-        for (int i = 0; i < count; i++) {
-            Node currentNode = getNode(i);
-            if (Math.abs(currentNode.x - x) < 1e-10) {
-                // если нашли узел с таким x, обновляем y и выходим
-                currentNode.y = y;
-                return;
-            }
         }
         // создаем новый узел
         Node newNode = new Node(x, y);
@@ -225,6 +256,12 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
     }
     @Override
     public void remove(int index) { //метод для удаления узлов
+        if (index < 0 || index >= count) {
+            throw new IllegalArgumentException("Index out of bounds: " + index);
+        }
+        if (count == 2) {
+            throw new IllegalStateException("Cannot remove element - minimum 2 points required");
+        }
         if (count == 1) {           //если в списке один узел
             head = null;
             count = 0;
@@ -241,4 +278,26 @@ public class LinkedListTabulatedFunction extends AbstractTabulatedFunction imple
             head = null;
         }
     }
+    public Iterator<Point> iterator(){
+        return new Iterator<>() {
+            private Node node = head;
+            private int currentIndex = 0;
+            @Override
+            public boolean hasNext() {
+                return currentIndex < count;
+            }
+            @Override
+            public Point next() {
+                if (!(hasNext())) {
+                    throw new NoSuchElementException();
+                }
+                Point point = new Point(node.x, node.y);
+                node = node.next;
+                currentIndex++;
+                return point;
+            }
+        };
+    }
+
+
 }

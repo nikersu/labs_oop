@@ -1,6 +1,9 @@
 package functions;
 
 import java.util.Arrays;
+import exceptions.InterpolationException;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
     private double[] xArray;
@@ -8,11 +11,24 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     private int count;
 
     public ArrayTabulatedFunction(double[] xArray, double[] yArray) {
+        if (xArray.length != yArray.length) {
+            throw new IllegalArgumentException("Arrays must have the same length");
+        }
+        if (xArray.length < 2) {
+            throw new IllegalArgumentException("The table should be at least 2 points long");
+        }
+
+        checkLengthIsTheSame(xArray, yArray);
+        checkSorted(xArray);
+
         this.count = xArray.length;
         this.xArray = Arrays.copyOf(xArray, count);
         this.yArray = Arrays.copyOf(yArray, count);
     }
     public ArrayTabulatedFunction(MathFunction source, double xFrom, double xTo, int count) {
+        if (count < 2) {
+            throw new IllegalArgumentException("At least 2 points required");
+        }
         this.count = count;
         this.xArray = new double[count];
         this.yArray = new double[count];
@@ -43,14 +59,23 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     }
     @Override
     public double getX(int index) {
+        if (index < 0 || index >= count) {
+            throw new IllegalArgumentException("Index out of bounds: " + index);
+        }
         return xArray[index];
     }
     @Override
     public double getY(int index) {
+        if (index < 0 || index >= count) {
+            throw new IllegalArgumentException("Index out of bounds: " + index);
+        }
         return yArray[index];
     }
     @Override
     public void setY(int index, double value) {
+        if (index < 0 || index >= count) {
+            throw new IllegalArgumentException("Index out of bounds: " + index);
+        }
         yArray[index] = value;
     }
     @Override
@@ -81,7 +106,9 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     }
     @Override
     protected int floorIndexOfX(double x) { //поиск левой границы для интервала х
-        if (x < getX(0)) return 0;
+        if (x < getX(0)) {
+            throw new IllegalArgumentException("x is less than left bound: " + x);
+        }
         if (x > getX(count - 1))return count;
         //бинарный поиск интервала
         int left = 0;
@@ -90,7 +117,7 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
             int mid = left + (right - left) / 2; //находим средний индекс
             if (getX(mid) == x) {
                 return mid;
-            } else if (getX(mid) < x){
+            } if (Math.abs(getX(mid) - x) < 1e-12) {
                 left = mid + 1;
             } else {
                 right = mid - 1;
@@ -100,24 +127,26 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     }
     @Override
     protected double extrapolateLeft(double x) {
-        if (count == 1) {
-            return getY(0);
-        }
         return interpolate(x, getX(0), getX(1), getY(0), getY(1));
     }
     @Override
     protected double extrapolateRight(double x) {
-        if (count == 1) {
-            return getY(0);
-        }
         return interpolate(x, getX(count - 2), getX(count - 1), getY(count - 2), getY(count - 1));
     }
     @Override
     protected double interpolate(double x, int floorIndex) {
-        if (count == 1) {
-            return getY(0);
+        if (floorIndex < 0 || floorIndex >= count - 1) {
+            throw new InterpolationException("Incorrect index for interpolation");
         }
-        return interpolate(x, getX(floorIndex), getX(floorIndex+1), getY(floorIndex), getY(floorIndex+1));
+
+        double leftX = getX(floorIndex);
+        double rightX = getX(floorIndex + 1);
+
+        if (x < leftX || x > rightX) {
+            throw new InterpolationException("Point x is outside the interpolation interval");
+        }
+        // вызов метода интерполяции с четырьмя параметрами
+        return interpolate(x, leftX, rightX, getY(floorIndex), getY(floorIndex + 1));
     }
     @Override
     public void insert(double x, double y) {
@@ -149,6 +178,12 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
     }
     @Override
     public void remove(int index) {
+        if (index < 0 || index >= count) {
+            throw new IllegalArgumentException("Index out of bounds: " + index);
+        }
+        if (count == 2) {
+            throw new IllegalStateException("Cannot remove element - minimum 2 points required");
+        }
         //новые массивы уменьшенного размера
         double[] newXArray = new double[count - 1];
         double[] newYArray = new double[count - 1];
@@ -164,5 +199,25 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         this.yArray = newYArray;
         this.count--;
     }
-
+    @Override
+    public Iterator<Point> iterator() {
+        return new Iterator<>() { // возвращаем анонимный класс, реализующий интерфейс Iterator<Point>
+            private int i = 0;
+            // проверка, есть ли еще элементы для итерации
+            @Override
+            public boolean hasNext() {
+                return i < count;
+            }
+            // возвращает следующий элемент итерации
+            @Override
+            public Point next() {
+                if (!hasNext()) {
+                    throw new NoSuchElementException();
+                }
+                Point point = new Point(xArray[i], yArray[i]);
+                i++;
+                return point;
+            }
+        };
+    }
 }
