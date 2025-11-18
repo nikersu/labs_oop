@@ -4,8 +4,10 @@ import java.util.Arrays;
 import exceptions.InterpolationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.io.Serializable;
 
-public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Insertable, Removable {
+public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements Serializable, Insertable, Removable {
+    private static final long serialVersionUID =  1L;
     private double[] xArray;
     private double[] yArray;
     private int count;
@@ -166,10 +168,10 @@ public class ArrayTabulatedFunction extends AbstractTabulatedFunction implements
         System.arraycopy(xArray, 0, newXValues, 0, insertIndex); //копирование эл-тов до позиции вставки
         System.arraycopy(yArray, 0, newYValues, 0, insertIndex);
 
-        newXValues[insertIndex] = x; //втавка нового элемента
+        newXValues[insertIndex] = x; //вСтавка нового элемента
         newYValues[insertIndex] = y;
 
-        System.arraycopy(xArray, insertIndex, newXValues, insertIndex + 1, count - insertIndex); //копирование эл-тов после поиции вставки
+        System.arraycopy(xArray, insertIndex, newXValues, insertIndex + 1, count - insertIndex); //копирование эл-тов после позиции вставки
         System.arraycopy(yArray, insertIndex, newYValues, insertIndex + 1, count - insertIndex);
 
         xArray = newXValues; //замена старых массивов

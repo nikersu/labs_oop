@@ -10,6 +10,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import functions.Point;
+import java.io.BufferedWriter;
+import java.io.PrintWriter;
+import java.io.BufferedReader;
+import java.text.NumberFormat;
+import java.text.ParseException;
+import java.util.Locale;
+
 
 public final class FunctionsIO {
     private FunctionsIO() {
@@ -25,6 +32,7 @@ public final class FunctionsIO {
         }
         outputStream.flush();
     }
+
 
     public static TabulatedFunction readTabulatedFunction(BufferedInputStream inputStream, TabulatedFunctionFactory factory) throws IOException {
         DataInputStream dataInputStream = new DataInputStream(inputStream);
@@ -47,5 +55,34 @@ public final class FunctionsIO {
         ObjectOutputStream objectOutputStream = new ObjectOutputStream(stream);
         objectOutputStream.writeObject(function);
         stream.flush();
+    }
+    public static void writeTabulatedFunction(BufferedWriter writer, TabulatedFunction function) throws IOException {
+        PrintWriter printWriter = new PrintWriter(writer);
+        printWriter.println(function.getCount());
+        for (Point point : function) {
+            printWriter.printf("%f %f\n", point.x, point.y);
+        }
+        printWriter.flush();
+    }
+    public static TabulatedFunction readTabulatedFunction(BufferedReader reader, TabulatedFunctionFactory factory) throws IOException {
+        String countLine = reader.readLine();
+        int count = Integer.parseInt(countLine);
+
+        double[] xValues = new double[count];
+        double[] yValues = new double[count];
+        NumberFormat format = NumberFormat.getInstance(Locale.forLanguageTag("ru"));
+        for (int i = 0; i < count; i++) {
+            String line = reader.readLine();
+            String[] parts = line.split(" ");
+            try {
+                Number xNumber = format.parse(parts[0]);
+                Number yNumber = format.parse(parts[1]);
+                xValues[i] = xNumber.doubleValue();
+                yValues[i] = yNumber.doubleValue();
+            } catch (ParseException e) {
+                throw new IOException(e);
+            }
+        }
+        return factory.create(xValues, yValues);
     }
 }
