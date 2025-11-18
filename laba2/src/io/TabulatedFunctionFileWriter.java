@@ -4,6 +4,9 @@ import functions.TabulatedFunction;
 import functions.ArrayTabulatedFunction;
 import functions.LinkedListTabulatedFunction;
 import java.io.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class TabulatedFunctionFileWriter {
     public static void main(String[] args) {
