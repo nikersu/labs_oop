@@ -28,7 +28,7 @@ public class MultiplyingTaskExecutor {
         }
 
         // вывод
-        System.out.println(function());
+        System.out.println(function);
 
         double expectedValue = Math.pow(2, 10); // 1024
         double actualValue = function.getY(0);
