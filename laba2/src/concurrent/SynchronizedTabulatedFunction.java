@@ -3,7 +3,6 @@ package concurrent;
 import functions.Point;
 import functions.TabulatedFunction;
 import java.util.Iterator;
-
 public class SynchronizedTabulatedFunction implements TabulatedFunction {
     private final TabulatedFunction function;
     private final Object lock;

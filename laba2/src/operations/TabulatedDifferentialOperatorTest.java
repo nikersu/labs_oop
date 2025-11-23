@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import functions.factory.ArrayTabulatedFunctionFactory;
 import functions.factory.LinkedListTabulatedFunctionFactory;
+import concurrent.SynchronizedTabulatedFunction;
 
 public class TabulatedDifferentialOperatorTest {
 
@@ -74,7 +75,6 @@ public class TabulatedDifferentialOperatorTest {
     @Test
     public void testDeriveQuadraticFunction() {
         // Тест производной квадратичной функции f(x) = x²
-        // Производная должна быть f'(x) = 2x
         double[] xValues = {0.0, 1.0, 2.0, 3.0, 4.0};
         double[] yValues = {0.0, 1.0, 4.0, 9.0, 16.0}; // x²
         
@@ -84,7 +84,6 @@ public class TabulatedDifferentialOperatorTest {
         
         assertEquals(5, derivative.getCount());
         // Первая точка: forward difference
-        // f'(0) ≈ (1-0)/(1-0) = 1 (приблизительно, так как это численное дифференцирование)
         assertEquals(1.0, derivative.getY(0), 1e-10);
         
         // Внутренние точки: central difference
@@ -165,6 +164,105 @@ public class TabulatedDifferentialOperatorTest {
         assertEquals(4, derivative.getCount());
         for (int i = 0; i < derivative.getCount(); i++) {
             assertEquals(xValues[i], derivative.getX(i), 1e-10, "X values should be preserved at index " + i);
+        }
+    }
+
+    @Test
+    void testDeriveSynchronouslyWithArrayFunction() {
+        // создаём тестовую функцию на основе массива
+        double[] xValues = {1.0, 2.0, 3.0, 4.0};
+        double[] yValues = {1.0, 4.0, 9.0, 16.0};
+        TabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
+        TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator();
+        TabulatedFunction derivedNormal = operator.derive(function);
+        TabulatedFunction derivedSync = operator.deriveSynchronously(function);
+
+        // проверка, что результаты одинаковые
+        assertEquals(derivedNormal.getCount(), derivedSync.getCount());
+        for (int i = 0; i < derivedNormal.getCount(); i++) {
+            assertEquals(derivedNormal.getX(i), derivedSync.getX(i), 1e-9);
+            assertEquals(derivedNormal.getY(i), derivedSync.getY(i), 1e-9);
+        }
+    }
+
+    @Test
+    void testDeriveSynchronouslyWithLinkedListFunction() {
+        double[] xValues = {0.0, 1.0, 2.0, 3.0};
+        double[] yValues = {0.0, 1.0, 8.0, 27.0};
+        TabulatedFunction function = new LinkedListTabulatedFunction(xValues, yValues);
+        TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator();
+
+        TabulatedFunction derivedNormal = operator.derive(function);
+        TabulatedFunction derivedSync = operator.deriveSynchronously(function);
+        assertEquals(derivedNormal.getCount(), derivedSync.getCount());
+        for (int i = 0; i < derivedNormal.getCount(); i++) {
+            assertEquals(derivedNormal.getX(i), derivedSync.getX(i), 1e-9);
+            assertEquals(derivedNormal.getY(i), derivedSync.getY(i), 1e-9);
+        }
+    }
+
+    @Test
+    void testDeriveSynchronouslyWithAlreadySynchronizedFunction() {
+        double[] xValues = {1.0, 2.0, 3.0};
+        double[] yValues = {2.0, 4.0, 6.0};
+        TabulatedFunction originalFunction = new ArrayTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunction = new SynchronizedTabulatedFunction(originalFunction);
+        TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator();
+        TabulatedFunction derivedSync = operator.deriveSynchronously(syncFunction);
+
+        // проверка на корректность вычислений производной
+        assertEquals(3, derivedSync.getCount());
+        assertEquals(2.0, derivedSync.getY(0), 1e-9);
+        assertEquals(2.0, derivedSync.getY(1), 1e-9);
+        assertEquals(2.0, derivedSync.getY(2), 1e-9);
+    }
+
+    @Test
+    void testDeriveSynchronouslyWithDifferentFactory() {
+        // Тестируем с другой фабрикой
+        double[] xValues = {1.0, 2.0, 3.0};
+        double[] yValues = {1.0, 2.0, 3.0};
+        TabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
+
+        // Используем фабрику для связных списков
+        TabulatedDifferentialOperator operator =
+                new TabulatedDifferentialOperator(new LinkedListTabulatedFunctionFactory());
+
+        TabulatedFunction derivedSync = operator.deriveSynchronously(function);
+
+        // Проверяем, что функция создана правильной фабрикой
+        assertInstanceOf(LinkedListTabulatedFunction.class, derivedSync);
+        assertEquals(3, derivedSync.getCount());
+    }
+
+    @Test
+    void testDeriveSynchronouslyWithSinglePoint() {
+        // крайний случай - одна точка
+        double[] xValues = {1.0};
+        double[] yValues = {5.0};
+        TabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
+        TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator();
+        TabulatedFunction derivedSync = operator.deriveSynchronously(function);
+
+        assertEquals(1, derivedSync.getCount());
+        assertEquals(0.0, derivedSync.getY(0), 1e-9);
+    }
+
+    @Test
+    void testDeriveSynchronouslyConsistency() {
+        double[] xValues = {0.0, 0.5, 1.0, 1.5, 2.0};
+        double[] yValues = {0.0, 0.25, 1.0, 2.25, 4.0};
+        TabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
+        TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator();
+
+        // вычисляем производную несколько раз
+        TabulatedFunction firstDerived = operator.deriveSynchronously(function);
+        TabulatedFunction secondDerived = operator.deriveSynchronously(function);
+
+        assertEquals(firstDerived.getCount(), secondDerived.getCount());
+        for (int i = 0; i < firstDerived.getCount(); i++) {
+            assertEquals(firstDerived.getX(i), secondDerived.getX(i), 1e-9);
+            assertEquals(firstDerived.getY(i), secondDerived.getY(i), 1e-9);
         }
     }
 }
