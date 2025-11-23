@@ -46,4 +46,105 @@ public class SynchronizedTabulatedFunctionTest {
         synchronizedFunction.setY(3, 10.0);
         assertEquals(10.0, synchronizedFunction.getY(3));
     }
+
+    @Test
+    void testDoSynchronouslyWithReturnValue() {
+        double[] xValues = {1.0, 2.0, 3.0, 4.0};
+        double[] yValues = {1.0, 4.0, 9.0, 16.0};
+        TabulatedFunction arrayFunc = new ArrayTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(arrayFunc);
+        Double sum = syncFunc.doSynchronously(func -> {
+            double total = 0;
+            for (int i = 0; i < func.getCount(); i++) {
+                total += func.getY(i);
+            }
+            return total;
+        });
+        assertEquals(30.0, sum, 1e-9);
+    }
+
+    @Test
+    void testDoSynchronouslyWithVoid() {
+        double[] xValues = {1.0, 2.0, 3.0};
+        double[] yValues = {1.0, 2.0, 3.0};
+        TabulatedFunction arrayFunc = new ArrayTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(arrayFunc);
+        Void result = syncFunc.doSynchronously(func -> {
+            for (int i = 0; i < func.getCount(); i++) {
+                func.setY(i, func.getY(i) * 2);
+            }
+            return null;
+        });
+        assertNull(result);
+        // проверяем изменений
+        assertEquals(2.0, syncFunc.getY(0), 1e-9);
+        assertEquals(4.0, syncFunc.getY(1), 1e-9);
+        assertEquals(6.0, syncFunc.getY(2), 1e-9);
+    }
+
+    @Test
+    void testDoSynchronouslyWithComplexOperation() {
+        double[] xValues = {0.0, 1.0, 2.0};
+        double[] yValues = {0.0, 1.0, 4.0};
+        TabulatedFunction arrayFunc = new ArrayTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(arrayFunc);
+        String result = syncFunc.doSynchronously(func -> {
+            String info = "Count: " + func.getCount() +
+                    ", Left: " + func.leftBound() +
+                    ", Right: " + func.rightBound();
+            func.setY(1, 100.0);
+            return info;
+        });
+        assertEquals("Count: 3, Left: 0.0, Right: 2.0", result);
+        assertEquals(100.0, syncFunc.getY(1), 1e-9);
+    }
+
+    @Test
+    void testDoSynchronouslyWithLambda() {
+        double[] xValues = {1.0, 2.0, 3.0};
+        double[] yValues = {10.0, 20.0, 30.0};
+        TabulatedFunction arrayFunc = new ArrayTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(arrayFunc);
+        // использование лямбда-выражения для операции
+        Double average = syncFunc.doSynchronously(func -> {
+            double sum = 0;
+            for (int i = 0; i < func.getCount(); i++) {
+                sum += func.getY(i);
+            }
+            return sum / func.getCount();
+        });
+        assertEquals(20.0, average, 1e-9);
+    }
+    @Test
+    void testDoSynchronouslyWithAnonymousClass() {
+        double[] xValues = {1.0, 2.0, 3.0};
+        double[] yValues = {5.0, 10.0, 15.0};
+        TabulatedFunction arrayFunc = new ArrayTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(arrayFunc);
+        SynchronizedTabulatedFunction.Operation<Double> operation = func -> {
+            double result = 0;
+            for (int i = 0; i < func.getCount(); i++) {
+                result += func.getY(i);
+            }
+            return result;
+        };
+        Double product = syncFunc.doSynchronously(operation);
+        assertEquals(750.0, product, 1e-9);
+    }
+    @Test
+    void testDoSynchronouslyWithArrayResult() {
+        double[] xValues = {1.0, 2.0, 3.0};
+        double[] yValues = {1.0, 4.0, 9.0};
+        TabulatedFunction arrayFunc = new ArrayTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(arrayFunc);
+        // операция, возвращающая массив
+        double[] squaredValues = syncFunc.doSynchronously(func -> {
+            double[] result = new double[func.getCount()];
+            for (int i = 0; i < func.getCount(); i++) {
+                result[i] = func.getY(i) * func.getY(i);
+            }
+            return result;
+        });
+        assertArrayEquals(new double[]{1.0, 16.0, 81.0}, squaredValues, 1e-9);
+    }
 }
