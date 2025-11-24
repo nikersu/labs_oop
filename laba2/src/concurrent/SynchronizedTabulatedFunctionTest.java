@@ -2,8 +2,11 @@ package concurrent;
 
 import functions.ArrayTabulatedFunction;
 import functions.LinkedListTabulatedFunction;
+import functions.Point;
 import functions.TabulatedFunction;
 import org.junit.jupiter.api.Test;
+
+import java.util.Iterator;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SynchronizedTabulatedFunctionTest {
@@ -146,5 +149,49 @@ public class SynchronizedTabulatedFunctionTest {
             return result;
         });
         assertArrayEquals(new double[]{1.0, 16.0, 81.0}, squaredValues, 1e-9);
+    }
+
+    @Test
+    void testIteratorReturnsSnapshot() {
+        double[] xValues = {1.0, 2.0, 3.0};
+        double[] yValues = {2.0, 4.0, 6.0};
+        TabulatedFunction arrayFunc = new ArrayTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(arrayFunc);
+
+        Iterator<Point> iterator = syncFunc.iterator();
+        syncFunc.setY(1, 100.0);
+
+        assertTrue(iterator.hasNext());
+        Point first = iterator.next();
+        assertEquals(1.0, first.x);
+        assertEquals(2.0, first.y);
+
+        Point second = iterator.next();
+        assertEquals(2.0, second.x);
+        assertEquals(4.0, second.y);
+
+        Point third = iterator.next();
+        assertEquals(3.0, third.x);
+        assertEquals(6.0, third.y);
+
+        assertFalse(iterator.hasNext());
+    }
+
+    @Test
+    void testIteratorOrder() {
+        double[] xValues = {0.0, 0.5, 1.0, 1.5};
+        double[] yValues = {0.0, 0.25, 1.0, 2.25};
+        TabulatedFunction arrayFunc = new ArrayTabulatedFunction(xValues, yValues);
+        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(arrayFunc);
+
+        Iterator<Point> iterator = syncFunc.iterator();
+        int index = 0;
+        while (iterator.hasNext()) {
+            Point point = iterator.next();
+            assertEquals(xValues[index], point.x);
+            assertEquals(yValues[index], point.y);
+            index++;
+        }
+        assertEquals(xValues.length, index);
     }
 }
