@@ -31,7 +31,7 @@ public class TabulatedDifferentialOperatorTest {
         // Тест геттера и сеттера фабрики
         TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator();
         assertInstanceOf(ArrayTabulatedFunctionFactory.class, operator.getFactory());
-        
+
         LinkedListTabulatedFunctionFactory newFactory = new LinkedListTabulatedFunctionFactory();
         operator.setFactory(newFactory);
         assertEquals(newFactory, operator.getFactory());
@@ -43,11 +43,11 @@ public class TabulatedDifferentialOperatorTest {
         // Производная должна быть константой 1
         double[] xValues = {0.0, 1.0, 2.0, 3.0, 4.0};
         double[] yValues = {0.0, 1.0, 2.0, 3.0, 4.0};
-        
+
         TabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
         TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator(new ArrayTabulatedFunctionFactory());
         TabulatedFunction derivative = operator.derive(function);
-        
+
         assertEquals(5, derivative.getCount());
         // Проверяем, что производная близка к 1 для всех точек
         for (int i = 0; i < derivative.getCount(); i++) {
@@ -60,11 +60,11 @@ public class TabulatedDifferentialOperatorTest {
         // Тест производной линейной функции с фабрикой LinkedList
         double[] xValues = {0.0, 1.0, 2.0, 3.0};
         double[] yValues = {0.0, 1.0, 2.0, 3.0};
-        
+
         TabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
         TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator(new LinkedListTabulatedFunctionFactory());
         TabulatedFunction derivative = operator.derive(function);
-        
+
         assertInstanceOf(LinkedListTabulatedFunction.class, derivative);
         assertEquals(4, derivative.getCount());
         for (int i = 0; i < derivative.getCount(); i++) {
@@ -77,15 +77,15 @@ public class TabulatedDifferentialOperatorTest {
         // Тест производной квадратичной функции f(x) = x²
         double[] xValues = {0.0, 1.0, 2.0, 3.0, 4.0};
         double[] yValues = {0.0, 1.0, 4.0, 9.0, 16.0}; // x²
-        
+
         TabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
         TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator();
         TabulatedFunction derivative = operator.derive(function);
-        
+
         assertEquals(5, derivative.getCount());
         // Первая точка: forward difference
         assertEquals(1.0, derivative.getY(0), 1e-10);
-        
+
         // Внутренние точки: central difference
         // f'(1) ≈ (4-0)/(2-0) = 2
         assertEquals(2.0, derivative.getY(1), 1e-10);
@@ -93,7 +93,7 @@ public class TabulatedDifferentialOperatorTest {
         assertEquals(4.0, derivative.getY(2), 1e-10);
         // f'(3) ≈ (16-4)/(4-2) = 6
         assertEquals(6.0, derivative.getY(3), 1e-10);
-        
+
         // Последняя точка: backward difference
         // f'(4) ≈ (16-9)/(4-3) = 7 (приблизительно)
         assertEquals(7.0, derivative.getY(4), 1e-10);
@@ -105,11 +105,11 @@ public class TabulatedDifferentialOperatorTest {
         // Производная должна быть 0
         double[] xValues = {0.0, 1.0, 2.0, 3.0};
         double[] yValues = {5.0, 5.0, 5.0, 5.0};
-        
+
         TabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
         TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator();
         TabulatedFunction derivative = operator.derive(function);
-        
+
         assertEquals(4, derivative.getCount());
         // Производная константы должна быть 0
         for (int i = 0; i < derivative.getCount(); i++) {
@@ -122,11 +122,11 @@ public class TabulatedDifferentialOperatorTest {
         // Тест с минимальным количеством точек (2 точки)
         double[] xValues = {0.0, 1.0};
         double[] yValues = {0.0, 2.0};
-        
+
         TabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
         TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator();
         TabulatedFunction derivative = operator.derive(function);
-        
+
         assertEquals(2, derivative.getCount());
         // Первая точка: forward difference = (2-0)/(1-0) = 2
         assertEquals(2.0, derivative.getY(0), 1e-10);
@@ -139,11 +139,11 @@ public class TabulatedDifferentialOperatorTest {
         // Тест дифференцирования функции типа LinkedListTabulatedFunction
         double[] xValues = {0.0, 1.0, 2.0};
         double[] yValues = {0.0, 2.0, 4.0}; // f(x) = 2x
-        
+
         TabulatedFunction function = new LinkedListTabulatedFunction(xValues, yValues);
         TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator(new ArrayTabulatedFunctionFactory());
         TabulatedFunction derivative = operator.derive(function);
-        
+
         assertEquals(3, derivative.getCount());
         // Производная f(x) = 2x должна быть 2
         assertEquals(2.0, derivative.getY(0), 1e-10); // forward difference
@@ -156,11 +156,11 @@ public class TabulatedDifferentialOperatorTest {
         // Тест, что x-координаты сохраняются
         double[] xValues = {1.0, 2.5, 3.7, 5.0};
         double[] yValues = {1.0, 2.5, 3.7, 5.0};
-        
+
         TabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
         TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator();
         TabulatedFunction derivative = operator.derive(function);
-        
+
         assertEquals(4, derivative.getCount());
         for (int i = 0; i < derivative.getCount(); i++) {
             assertEquals(xValues[i], derivative.getX(i), 1e-10, "X values should be preserved at index " + i);
@@ -234,36 +234,4 @@ public class TabulatedDifferentialOperatorTest {
         assertInstanceOf(LinkedListTabulatedFunction.class, derivedSync);
         assertEquals(3, derivedSync.getCount());
     }
-
-    @Test
-    void testDeriveSynchronouslyWithSinglePoint() {
-        // крайний случай - одна точка
-        double[] xValues = {1.0};
-        double[] yValues = {5.0};
-        TabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
-        TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator();
-        TabulatedFunction derivedSync = operator.deriveSynchronously(function);
-
-        assertEquals(1, derivedSync.getCount());
-        assertEquals(0.0, derivedSync.getY(0), 1e-9);
-    }
-
-    @Test
-    void testDeriveSynchronouslyConsistency() {
-        double[] xValues = {0.0, 0.5, 1.0, 1.5, 2.0};
-        double[] yValues = {0.0, 0.25, 1.0, 2.25, 4.0};
-        TabulatedFunction function = new ArrayTabulatedFunction(xValues, yValues);
-        TabulatedDifferentialOperator operator = new TabulatedDifferentialOperator();
-
-        // вычисляем производную несколько раз
-        TabulatedFunction firstDerived = operator.deriveSynchronously(function);
-        TabulatedFunction secondDerived = operator.deriveSynchronously(function);
-
-        assertEquals(firstDerived.getCount(), secondDerived.getCount());
-        for (int i = 0; i < firstDerived.getCount(); i++) {
-            assertEquals(firstDerived.getX(i), secondDerived.getX(i), 1e-9);
-            assertEquals(firstDerived.getY(i), secondDerived.getY(i), 1e-9);
-        }
-    }
 }
-

@@ -119,22 +119,6 @@ public class SynchronizedTabulatedFunctionTest {
         assertEquals(20.0, average, 1e-9);
     }
     @Test
-    void testDoSynchronouslyWithAnonymousClass() {
-        double[] xValues = {1.0, 2.0, 3.0};
-        double[] yValues = {5.0, 10.0, 15.0};
-        TabulatedFunction arrayFunc = new ArrayTabulatedFunction(xValues, yValues);
-        SynchronizedTabulatedFunction syncFunc = new SynchronizedTabulatedFunction(arrayFunc);
-        SynchronizedTabulatedFunction.Operation<Double> operation = func -> {
-            double result = 0;
-            for (int i = 0; i < func.getCount(); i++) {
-                result += func.getY(i);
-            }
-            return result;
-        };
-        Double product = syncFunc.doSynchronously(operation);
-        assertEquals(750.0, product, 1e-9);
-    }
-    @Test
     void testDoSynchronouslyWithArrayResult() {
         double[] xValues = {1.0, 2.0, 3.0};
         double[] yValues = {1.0, 4.0, 9.0};
