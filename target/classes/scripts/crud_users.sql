@@ -9,7 +9,7 @@ SELECT id, username, password_hash FROM users WHERE id = 1;
 
 -- обновление
 -- обновить имя пользователя
-UPDATE users SET username = 'new_username', password_hash = 'new_hash' WHERE id = 1;
+UPDATE users SET username = 'new_username' WHERE id = 1;
 
 -- удаление
 DELETE FROM users WHERE id = 1;

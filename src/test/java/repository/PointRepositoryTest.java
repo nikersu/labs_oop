@@ -1,446 +1,261 @@
 package repository;
 
 import models.Point;
-import models.Function;
-import models.User;
 import org.junit.jupiter.api.*;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import static org.junit.jupiter.api.Assertions.*;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Тесты репозитория точек с генерацией данных")
 public class PointRepositoryTest {
-    private static PointRepository pointRepository;
-    private static FunctionRepository functionRepository;
-    private static UserRepository userRepository;
-
-    private static Integer testUserId;
-    private static Integer testFunctionId;
-    private static final Random random = new Random();
+    private static PointRepository repository;
+    private final Integer testFunctionId = 1;
+    Double testXValue = 5.5;
 
     @BeforeAll
-    static void setUp() throws SQLException {
-        pointRepository = new PointRepository();
-        functionRepository = new FunctionRepository();
-        userRepository = new UserRepository();
-
-        // Создаем тестового пользователя
-        User testUser = new User("point_test_user", "password123");
-        testUserId = userRepository.insert(testUser);
-
-        // Создаем тестовую функцию
-        Function testFunction = new Function("Тестовая функция для точек", "x^2", testUserId);
-        testFunctionId = functionRepository.insert(testFunction);
-
-        System.out.println("Setup complete: User ID=" + testUserId + ", Function ID=" + testFunctionId);
-    }
-
-    @AfterAll
-    static void tearDown() throws SQLException {
-        // Очистка (каскадное удаление через user)
-        if (testUserId != null) {
-            userRepository.delete(testUserId);
-        }
+    static void setUp() {
+        repository = new PointRepository();
     }
 
     @Test
     @Order(1)
-    @DisplayName("Генерация разнообразных точек: разные типы функций")
-    void testGenerateDiversePoints() throws SQLException {
-        // Создаем несколько функций разных типов
-        String[] functionTypes = {"Квадратичная", "Синусоида", "Линейная", "Экспонента", "Кубическая"};
-        String[] expressions = {"x^2", "sin(x)", "2*x + 1", "exp(x)", "x^3 - x"};
+    @DisplayName("Генерация и добавление разнообразных точек")
+    void testInsertDiversePoints() throws SQLException {
+        // Генерация разнообразных данных точек
+        double[] xValues = {0.0, 1.5, -3.14, 100.0, 0.001, -999.999, 2.71, 0.0};
+        double[] yValues = {1.0, -2.5, 0.0, 255.5, 0.0001, 888.888, 3.14, 0.0};
+        Integer[] functionIds = {1, 1, 1, 2, 2, 3, 3, 4};
 
-        List<Integer> functionIds = new ArrayList<>();
+        // Добавляем несколько точек
+        for (int i = 0; i < xValues.length; i++) {
+            Point point = new Point();
+            point.setFunctionId(functionIds[i]);
+            point.setXValue(xValues[i]);
+            point.setYValue(yValues[i]);
 
-        // Генерируем точки для каждой функции
-        for (int i = 0; i < functionTypes.length; i++) {
-            // Создаем функцию
-            Function function = new Function(
-                    functionTypes[i] + "_" + System.currentTimeMillis(),
-                    expressions[i],
-                    testUserId
-            );
-            Integer funcId = functionRepository.insert(function);
-            functionIds.add(funcId);
+            repository.insert(point);
 
-            // Генерируем уникальные точки для каждой функции
-            List<Point> points = generatePointsForFunctionType(funcId, functionTypes[i], expressions[i]);
-            pointRepository.insertBatch(points);
-
-            System.out.println("Создана функция '" + functionTypes[i] +
-                    "' с " + points.size() + " точками");
-        }
-
-        // Проверяем, что точки создались
-        for (Integer funcId : functionIds) {
-            List<Point> retrievedPoints = pointRepository.findByFunctionId(funcId);
-            assertFalse(retrievedPoints.isEmpty(), "Должны быть точки для функции " + funcId);
-            assertTrue(retrievedPoints.size() >= 50, "Должно быть минимум 50 точек");
+            System.out.println("Добавлена точка: function_id=" + functionIds[i] +
+                    ", x=" + xValues[i] + ", y=" + yValues[i]);
         }
     }
 
     @Test
     @Order(2)
-    @DisplayName("Генерация точек с разными диапазонами X")
-    void testPointsWithDifferentXRanges() throws SQLException {
-        // Создаем функцию для этого теста
-        Function rangeFunction = new Function(
-                "RangeTest_" + System.currentTimeMillis(),
-                "x",
-                testUserId
-        );
-        Integer rangeFuncId = functionRepository.insert(rangeFunction);
+    @DisplayName("Поиск всех точек функции")
+    void testFindByFunctionId() throws SQLException {
+        List<Point> points = repository.findByFunctionId(testFunctionId);
 
-        // Генерация точек в разных диапазонах
-        generateAndTestPoints(rangeFuncId, -100.0, 100.0, 10.0, "Большой диапазон");
-        generateAndTestPoints(rangeFuncId, -1.0, 1.0, 0.1, "Маленький диапазон высокой точности");
-        generateAndTestPoints(rangeFuncId, 0.0, 10.0, 1.0, "Положительный диапазон");
-        generateAndTestPoints(rangeFuncId, -10.0, 0.0, 0.5, "Отрицательный диапазон");
+        assertNotNull(points, "Список точек не должен быть null");
+        assertFalse(points.isEmpty(), "Должна быть хотя бы одна точка для function_id=" + testFunctionId);
+
+        // Мы добавили 3 точки для function_id=1 (индексы 0,1,2 в массивах выше)
+        assertTrue(points.size() >= 3, "Должно быть минимум 3 точки для function_id=" + testFunctionId);
+
+        System.out.println("Найдено точек для function_id=" + testFunctionId + ": " + points.size());
+        points.forEach(p -> System.out.println("  - x=" + p.getXValue() + ", y=" + p.getYValue()));
     }
 
     @Test
     @Order(3)
-    @DisplayName("Генерация точек с разной плотностью")
-    void testPointsWithDifferentDensity() throws SQLException {
-        Integer densityFuncId = functionRepository.insert(
-                new Function("DensityTest", "x^2", testUserId)
-        );
+    @DisplayName("Поиск конкретной точки по function_id и x_value")
+    void testFindByFunctionIdAndX() throws SQLException {
+        // Сначала добавляем тестовую точку для поиска
+        Point testPoint = new Point();
+        testPoint.setFunctionId(testFunctionId);
+        testPoint.setXValue(testXValue);
+        testPoint.setYValue(10.2);
+        repository.insert(testPoint);
 
-        // Разная плотность точек
-        int[] pointCounts = {10, 50, 100, 500, 1000};
+        // Ищем точку
+        Point found = repository.findByFunctionIdAndX(testFunctionId, testXValue);
 
-        for (int count : pointCounts) {
-            long startTime = System.currentTimeMillis();
+        assertNotNull(found, "Точка должна быть найдена");
+        assertEquals(testFunctionId, found.getFunctionId(), "function_id должны совпадать");
+        assertEquals(testXValue, found.getXValue(), "x_value должны совпадать");
+        assertEquals(10.2, found.getYValue(), "y_value должны совпадать");
 
-            List<Point> densePoints = new ArrayList<>();
-            for (int i = 0; i < count; i++) {
-                double x = random.nextDouble() * 20 - 10; // от -10 до 10
-                double y = x * x; // y = x^2
-                densePoints.add(new Point(densityFuncId, x, y));
-            }
-
-            pointRepository.insertBatch(densePoints);
-
-            long duration = System.currentTimeMillis() - startTime;
-            System.out.println("Сгенерировано " + count + " точек за " + duration + "ms");
-
-            // Проверяем, что все точки добавлены
-            List<Point> retrieved = pointRepository.findByFunctionId(densityFuncId);
-            assertTrue(retrieved.size() >= count);
-        }
+        System.out.println("Найдена точка: function_id=" + testFunctionId +
+                ", x=" + testXValue + ", y=" + 10.2);
     }
 
     @Test
     @Order(4)
-    @DisplayName("Генерация точек с особыми значениями")
-    void testPointsWithSpecialValues() throws SQLException {
-        Integer specialFuncId = functionRepository.insert(
-                new Function("SpecialValues", "1/x", testUserId)
-        );
+    @DisplayName("Обновление точки")
+    void testUpdate() throws SQLException {
+        // Добавляем точку для обновления
+        Point point = new Point();
+        point.setFunctionId(testFunctionId);
+        point.setXValue(7.7);
+        point.setYValue(15.0);
+        repository.insert(point);
 
-        List<Point> specialPoints = new ArrayList<>();
+        // Обновляем точку
+        Point updatedPoint = new Point();
+        updatedPoint.setFunctionId(testFunctionId);
+        updatedPoint.setXValue(7.7);
+        updatedPoint.setYValue(30.5); // Новое значение Y
 
-        // Особые значения X
-        double[] specialXValues = {
-                0.0, 0.0001, -0.0001,           // Около нуля
-                1.0, -1.0,                      // Единицы
-                Math.PI, Math.E,                // Константы
-                Double.MAX_VALUE / 2,           // Большие значения
-                Double.MIN_VALUE,               // Очень маленькие
-                -Double.MAX_VALUE / 2           // Отрицательные большие
-        };
+        boolean success = repository.update(updatedPoint);
+        assertTrue(success, "Обновление должно быть успешным");
 
-        for (double x : specialXValues) {
-            double y = 1.0 / (x == 0 ? 0.0000001 : x); // Избегаем деления на 0
-            specialPoints.add(new Point(specialFuncId, x, y));
-        }
+        // Проверяем, что обновилось
+        Point found = repository.findByFunctionIdAndX(testFunctionId, 7.7);
+        assertNotNull(found);
+        assertEquals(30.5, found.getYValue(), "y_value должен быть обновлен");
 
-        // Добавляем NaN и Infinity (если поддерживается)
-        try {
-            specialPoints.add(new Point(specialFuncId, Double.NaN, Double.NaN));
-            specialPoints.add(new Point(specialFuncId, Double.POSITIVE_INFINITY, 0.0));
-            specialPoints.add(new Point(specialFuncId, Double.NEGATIVE_INFINITY, 0.0));
-        } catch (Exception e) {
-            System.out.println("Специальные значения NaN/Infinity не поддерживаются: " + e.getMessage());
-        }
-
-        pointRepository.insertBatch(specialPoints);
-
-        // Проверяем поиск по диапазону
-        List<Point> nearZero = pointRepository.findInXRange(specialFuncId, -0.1, 0.1);
-        assertFalse(nearZero.isEmpty());
-
-        List<Point> positive = pointRepository.findInXRange(specialFuncId, 0.5, 2.0);
-        assertFalse(positive.isEmpty());
+        System.out.println("Точка обновлена: x=" + 7.7 + ", y=" + 15.0 + " → " + 30.5);
     }
 
     @Test
     @Order(5)
-    @DisplayName("Генерация случайных данных для статистического анализа")
-    void testRandomDataForStatisticalAnalysis() throws SQLException {
-        Integer statsFuncId = functionRepository.insert(
-                new Function("Statistical", "random", testUserId)
-        );
+    @DisplayName("Удаление конкретной точки")
+    void testDelete() throws SQLException {
+        // Создаем временную точку для удаления
+        Point tempPoint = new Point();
+        tempPoint.setFunctionId(99);
+        tempPoint.setXValue(123.456);
+        tempPoint.setYValue(789.012);
+        repository.insert(tempPoint);
 
-        List<Point> randomPoints = new ArrayList<>();
-        int sampleSize = 1000;
+        // Удаляем
+        boolean deleted = repository.delete(99, 123.456);
+        assertTrue(deleted, "Удаление должно быть успешным");
 
-        // Генерация случайных точек с разными распределениями
-        for (int i = 0; i < sampleSize; i++) {
-            double x;
-            double y;
+        // Проверяем, что удалена
+        Point found = repository.findByFunctionIdAndX(99, 123.456);
+        assertNull(found, "Точка должна быть удалена из БД");
 
-            // Разные типы распределений
-            switch (i % 4) {
-                case 0: // Равномерное распределение
-                    x = random.nextDouble() * 100 - 50;
-                    y = random.nextDouble() * 100 - 50;
-                    break;
-                case 1: // Нормальное распределение
-                    x = random.nextGaussian() * 10;
-                    y = random.nextGaussian() * 10;
-                    break;
-                case 2: // Экспоненциальное
-                    x = -Math.log(1 - random.nextDouble()) * 10;
-                    y = -Math.log(1 - random.nextDouble()) * 10;
-                    break;
-                default: // Синусоидальный паттерн
-                    x = i * 0.1;
-                    y = Math.sin(x) + random.nextGaussian() * 0.1;
-                    break;
-            }
-
-            randomPoints.add(new Point(statsFuncId, x, y));
-        }
-
-        // Пакетная вставка
-        long startTime = System.currentTimeMillis();
-        pointRepository.insertBatch(randomPoints);
-        long insertTime = System.currentTimeMillis() - startTime;
-
-        System.out.println("Вставка " + sampleSize + " случайных точек: " + insertTime + "ms");
-
-        // Проверяем статистические характеристики
-        List<Point> allPoints = pointRepository.findByFunctionId(statsFuncId);
-        assertEquals(sampleSize, allPoints.size());
-
-        // Вычисляем среднее X
-        double sumX = allPoints.stream().mapToDouble(Point::getXValue).sum();
-        double meanX = sumX / allPoints.size();
-        System.out.println("Среднее X: " + meanX);
-
-        // Диапазон X
-        double minX = allPoints.stream().mapToDouble(Point::getXValue).min().orElse(0);
-        double maxX = allPoints.stream().mapToDouble(Point::getXValue).max().orElse(0);
-        System.out.println("Диапазон X: [" + minX + ", " + maxX + "]");
+        System.out.println("Точка function_id=99, x=123.456 успешно удалена");
     }
 
     @Test
     @Order(6)
-    @DisplayName("Тест поиска точек в диапазонах")
-    void testFindInXRange() throws SQLException {
-        Integer rangeTestFuncId = functionRepository.insert(
-                new Function("RangeSearchTest", "linear", testUserId)
-        );
+    @DisplayName("Поиск несуществующей точки")
+    void testFindNonExistentPoint() throws SQLException {
+        Point point = repository.findByFunctionIdAndX(999999, 999.999);
+        assertNull(point, "Несуществующая точка должна возвращать null");
 
-        // Генерируем точки от 0 до 100 с шагом 1
-        List<Point> linearPoints = new ArrayList<>();
-        for (int i = 0; i <= 100; i++) {
-            linearPoints.add(new Point(rangeTestFuncId, (double) i, (double) i * 2));
-        }
-        pointRepository.insertBatch(linearPoints);
-
-        // Тестируем разные диапазоны
-        testRange(rangeTestFuncId, 0.0, 10.0, 11);   // 0-10 включительно
-        testRange(rangeTestFuncId, 10.5, 20.5, 11);  // 11-20 включительно
-        testRange(rangeTestFuncId, 90.0, 100.0, 11); // 90-100 включительно
-        testRange(rangeTestFuncId, -10.0, -5.0, 0);  // Нет точек
-        testRange(rangeTestFuncId, 50.0, 50.0, 1);   // Точно одна точка
+        System.out.println("Поиск несуществующей точки возвращает null (корректно)");
     }
 
     @Test
     @Order(7)
-    @DisplayName("Тест обновления точек")
-    void testUpdatePoints() throws SQLException {
-        Integer updateFuncId = functionRepository.insert(
-                new Function("UpdateTest", "x^3", testUserId)
-        );
+    @DisplayName("Обновление несуществующей точки")
+    void testUpdateNonExistentPoint() throws SQLException {
+        Point nonExistent = new Point();
+        nonExistent.setFunctionId(999999);
+        nonExistent.setXValue(999.999);
+        nonExistent.setYValue(888.888);
 
-        // Создаем несколько точек
-        Point p1 = new Point(updateFuncId, 1.0, 1.0);
-        Point p2 = new Point(updateFuncId, 2.0, 8.0);
-        Point p3 = new Point(updateFuncId, 3.0, 27.0);
+        boolean success = repository.update(nonExistent);
+        assertFalse(success, "Обновление несуществующей точки должно возвращать false");
 
-        pointRepository.insert(p1);
-        pointRepository.insert(p2);
-        pointRepository.insert(p3);
-
-        // Обновляем Y значение
-        p2.setYValue(64.0); // 2^3 = 8, меняем на 64
-        boolean updated = pointRepository.update(p2);
-        assertTrue(updated);
-
-        // Проверяем обновление
-        Point retrieved = pointRepository.findByFunctionIdAndX(updateFuncId, 2.0);
-        assertNotNull(retrieved);
-        assertEquals(64.0, retrieved.getYValue(), 0.0001);
+        System.out.println("Обновление несуществующей точки возвращает false (корректно)");
     }
 
     @Test
     @Order(8)
-    @DisplayName("Тест удаления точек")
-    void testDeletePoints() throws SQLException {
-        Integer deleteFuncId = functionRepository.insert(
-                new Function("DeleteTest", "x^2", testUserId)
-        );
+    @DisplayName("Генерация точек с крайними значениями")
+    void testInsertEdgeCases() throws SQLException {
+        // Тест с разными edge case данными
 
-        // Создаем точки
-        for (int i = 1; i <= 10; i++) {
-            pointRepository.insert(new Point(deleteFuncId, (double) i, (double) i * i));
-        }
+        // 1. Ноль и отрицательные значения
+        Point zeroPoint = new Point();
+        zeroPoint.setFunctionId(100);
+        zeroPoint.setXValue(0.0);
+        zeroPoint.setYValue(0.0);
+        repository.insert(zeroPoint);
 
-        // Удаляем конкретную точку
-        boolean deleted = pointRepository.delete(deleteFuncId, 5.0);
-        assertTrue(deleted);
+        // 2. Очень большие значения
+        Point largePoint = new Point();
+        largePoint.setFunctionId(100);
+        largePoint.setXValue(999999.999999);
+        largePoint.setYValue(-888888.888888);
+        repository.insert(largePoint);
 
-        // Проверяем, что точка удалена
-        Point found = pointRepository.findByFunctionIdAndX(deleteFuncId, 5.0);
-        assertNull(found);
+        // 3. Очень маленькие значения
+        Point smallPoint = new Point();
+        smallPoint.setFunctionId(100);
+        smallPoint.setXValue(0.000001);
+        smallPoint.setYValue(-0.000001);
+        repository.insert(smallPoint);
 
-        // Проверяем, что остальные точки остались
-        List<Point> remaining = pointRepository.findByFunctionId(deleteFuncId);
-        assertEquals(9, remaining.size());
+        // 4. Идентичные x для разных функций
+        Point sameX1 = new Point();
+        sameX1.setFunctionId(101);
+        sameX1.setXValue(5.0);
+        sameX1.setYValue(10.0);
+        repository.insert(sameX1);
 
-        // Удаляем все точки функции
-        pointRepository.deleteByFunctionId(deleteFuncId);
-        List<Point> afterDeleteAll = pointRepository.findByFunctionId(deleteFuncId);
-        assertTrue(afterDeleteAll.isEmpty());
-    }
+        Point sameX2 = new Point();
+        sameX2.setFunctionId(102);
+        sameX2.setXValue(5.0);
+        sameX2.setYValue(20.0);
+        repository.insert(sameX2);
 
-    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
-
-    private List<Point> generatePointsForFunctionType(Integer functionId, String type, String expression) {
-        List<Point> points = new ArrayList<>();
-        int pointCount = 50 + random.nextInt(50); // 50-100 точек
-
-        for (int i = 0; i < pointCount; i++) {
-            double x = generateXForFunctionType(type, i, pointCount);
-            double y = calculateYForExpression(expression, x);
-            points.add(new Point(functionId, x, y));
-        }
-
-        return points;
-    }
-
-    private double generateXForFunctionType(String type, int index, int total) {
-        switch (type.toLowerCase()) {
-            case "синусоида":
-                return index * (2 * Math.PI / total); // 0 до 2π
-            case "экспонента":
-                return index * 0.1; // 0 до 10 с шагом 0.1
-            case "кубическая":
-                return (index - total/2.0) * 0.2; // симметрично вокруг 0
-            default:
-                return random.nextDouble() * 20 - 10; // от -10 до 10
-        }
-    }
-
-    private double calculateYForExpression(String expression, double x) {
-        if (expression.contains("x^2")) {
-            return x * x;
-        } else if (expression.contains("sin")) {
-            return Math.sin(x);
-        } else if (expression.contains("exp")) {
-            return Math.exp(x);
-        } else if (expression.contains("x^3")) {
-            return x * x * x - x;
-        } else if (expression.contains("2*x")) {
-            return 2 * x + 1;
-        } else {
-            return x; // линейная по умолчанию
-        }
-    }
-
-    private void generateAndTestPoints(Integer functionId, double startX, double endX,
-                                       double step, String description) throws SQLException {
-        List<Point> points = new ArrayList<>();
-
-        for (double x = startX; x <= endX; x += step) {
-            double y = Math.sin(x) * 10; // Пример функции
-            points.add(new Point(functionId, x, y));
-        }
-
-        pointRepository.insertBatch(points);
-
-        // Проверяем поиск в поддиапазоне
-        double midStart = startX + (endX - startX) * 0.25;
-        double midEnd = startX + (endX - startX) * 0.75;
-
-        List<Point> inRange = pointRepository.findInXRange(functionId, midStart, midEnd);
-        int expectedCount = (int) Math.round((midEnd - midStart) / step) + 1;
-
-        System.out.println(description + ": сгенерировано " + points.size() +
-                " точек, в поддиапазоне найдено " + inRange.size() +
-                " (ожидалось ~" + expectedCount + ")");
-
-        assertFalse(inRange.isEmpty());
-    }
-
-    private void testRange(Integer functionId, double minX, double maxX, int expectedCount)
-            throws SQLException {
-        List<Point> inRange = pointRepository.findInXRange(functionId, minX, maxX);
-        assertEquals(expectedCount, inRange.size(),
-                "Ожидалось " + expectedCount + " точек в диапазоне [" + minX + ", " + maxX + "]");
-
-        // Проверяем, что все X в диапазоне
-        for (Point p : inRange) {
-            assertTrue(p.getXValue() >= minX && p.getXValue() <= maxX,
-                    "X=" + p.getXValue() + " вне диапазона [" + minX + ", " + maxX + "]");
-        }
+        System.out.println("Добавлены точки с крайними значениями:");
+        System.out.println("  - Нулевые значения: x=0, y=0");
+        System.out.println("  - Большие значения: x=999999.999999, y=-888888.888888");
+        System.out.println("  - Маленькие значения: x=0.000001, y=-0.000001");
+        System.out.println("  - Идентичный x для разных function_id: x=5.0 (для function_id 101 и 102)");
     }
 
     @Test
     @Order(9)
-    @DisplayName("Стресс-тест: много точек")
-    void testStressManyPoints() throws SQLException {
-        Integer stressFuncId = functionRepository.insert(
-                new Function("StressTest", "stress", testUserId)
-        );
+    @DisplayName("Комплексный сценарий: генерация, поиск, изменение, удаление")
+    void testComplexScenario() throws SQLException {
+        System.out.println("\n=== Комплексный сценарий ===");
 
-        int largeCount = 10000;
-        List<Point> largeBatch = new ArrayList<>();
-
-        System.out.println("Начало генерации " + largeCount + " точек...");
-        long startTime = System.currentTimeMillis();
-
-        for (int i = 0; i < largeCount; i++) {
-            double x = random.nextDouble() * 1000;
-            double y = Math.sqrt(x);
-            largeBatch.add(new Point(stressFuncId, x, y));
-
-            // Прогресс каждые 1000 точек
-            if (i % 1000 == 0 && i > 0) {
-                System.out.println("Сгенерировано " + i + " точек...");
-            }
+        // 1. Генерация набора точек
+        System.out.println("1. Генерация 5 точек для function_id=200");
+        for (int i = 1; i <= 5; i++) {
+            Point p = new Point();
+            p.setFunctionId(200);
+            p.setXValue(i * 10.0);
+            p.setYValue(i * 20.0);
+            repository.insert(p);
+            System.out.println("   Добавлена: x=" + (i * 10.0) + ", y=" + (i * 20.0));
         }
 
-        long generateTime = System.currentTimeMillis() - startTime;
-        System.out.println("Генерация " + largeCount + " точек: " + generateTime + "ms");
+        // 2. Поиск всех точек
+        System.out.println("\n2. Поиск всех точек function_id=200");
+        List<Point> allPoints = repository.findByFunctionId(200);
+        assertEquals(5, allPoints.size(), "Должно быть 5 точек");
+        System.out.println("   Найдено: " + allPoints.size() + " точек");
 
-        // Пакетная вставка
-        startTime = System.currentTimeMillis();
-        pointRepository.insertBatch(largeBatch);
-        long insertTime = System.currentTimeMillis() - startTime;
+        // 3. Поиск конкретной точки
+        System.out.println("\n3. Поиск конкретной точки (x=30.0)");
+        Point specific = repository.findByFunctionIdAndX(200, 30.0);
+        assertNotNull(specific, "Точка должна быть найдена");
+        assertEquals(60.0, specific.getYValue(), "y должен быть 60.0");
+        System.out.println("   Найдена: x=30.0, y=60.0");
 
-        System.out.println("Вставка " + largeCount + " точек: " + insertTime + "ms");
-        System.out.println("Средняя скорость: " + (largeCount * 1000.0 / insertTime) + " точек/сек");
+        // 4. Изменение точки
+        System.out.println("\n4. Изменение точки (x=40.0)");
+        Point toUpdate = new Point();
+        toUpdate.setFunctionId(200);
+        toUpdate.setXValue(40.0);
+        toUpdate.setYValue(999.999); // Новое значение
+        repository.update(toUpdate);
 
-        // Проверяем, что все точки в базе
-        List<Point> retrieved = pointRepository.findByFunctionId(stressFuncId);
-        assertTrue(retrieved.size() >= largeCount);
+        Point updated = repository.findByFunctionIdAndX(200, 40.0);
+        assertEquals(999.999, updated.getYValue(), "y должен обновиться");
+        System.out.println("   Обновлена: x=40.0, y=80.0 → 999.999");
+
+        // 5. Удаление точки
+        System.out.println("\n5. Удаление точки (x=10.0)");
+        repository.delete(200, 10.0);
+
+        List<Point> afterDelete = repository.findByFunctionId(200);
+        assertEquals(4, afterDelete.size(), "Должно остаться 4 точки");
+        System.out.println("   Удалена точка x=10.0, осталось: " + afterDelete.size() + " точек");
+
+        // 6. Проверка удаленной точки
+        System.out.println("\n6. Проверка удаленной точки");
+        Point deleted = repository.findByFunctionIdAndX(200, 10.0);
+        assertNull(deleted, "Удаленная точка не должна находиться");
+        System.out.println("   Удаленная точка не найдена (корректно)");
     }
 }

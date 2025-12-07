@@ -116,8 +116,6 @@ public class UserRepository {
             return success;
         }
     }
-
-    // метод для маппинга
     private User mapResultSetToUser(ResultSet rs) throws SQLException {
         User user = new User();
         user.setId(rs.getInt("id"));

@@ -8,8 +8,8 @@ SELECT id, name, expression, user_id FROM functions;
 SELECT id, name, expression, user_id FROM functions WHERE id = 1;
 
 -- обновление
--- обновить имя и выражение функции
-UPDATE functions SET name = 'New Name', expression = 'x^3' WHERE id = 1;
+-- обновить имя функции
+UPDATE functions SET name = 'New Name' WHERE id = 1;
 
 -- удаление
 DELETE FROM functions WHERE id = 1;
