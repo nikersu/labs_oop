@@ -1,162 +1,234 @@
 package repository;
 
-import models.Function;
-import org.junit.jupiter.api.*;
-import java.sql.SQLException;
+import DTO.Function;
+import JDBC.repository.FunctionRepository;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class FunctionRepositoryTest {
-    private static FunctionRepository repository;
-    private static Integer testFunctionId;
+class FunctionRepositoryTest {
+    private FunctionRepository functionRepository;
+    private Integer functionId1;
+    private Integer functionId2;
 
-    @BeforeAll
-    static void setUp() {
-        repository = new FunctionRepository();
+        @BeforeEach
+    void setUp() {
+        functionRepository = new FunctionRepository();
+        Integer userId1 = 1;
+        // Очищаем таблицу перед тестами
+        clearFunctionsTable();
+
+        // Добавляем тестовые функции
+        functionId1 = functionRepository.insert(new Function("sin(x)", "Math.sin(x)", userId1));
+        functionId2 = functionRepository.insert(new Function("cos(x)", "Math.cos(x)", userId1));
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Очищаем таблицу после тестов
+        clearFunctionsTable();
     }
 
     @Test
-    @Order(1)
-    @DisplayName("Генерация и добавление разнообразных функций")
-    void testInsertDiverseFunctions() throws SQLException {
-        // Генерация разнообразных данных
-        String[] functionNames = {
-                "Квадратичная функция",
-                "Линейная зависимость",
-                "Синусоидальное колебание",
-                "Экспоненциальный рост"
-        };
+    void testInsert() {
+        Integer userId1 = 1;
+        Function newFunction = new Function("tan(x)", "Math.tan(x)", userId1);
+        Integer newId = functionRepository.insert(newFunction);
+        assertNotNull(newId);
+        assertTrue(newId > 0);
 
-        String[] expressions = {
-                "x^2 + 2x + 1",
-                "3.5*x - 2.1",
-                "sin(x) * amplitude",
-                "e^(k*x)"
-        };
+        Function foundFunction = functionRepository.findById(newId);
+        assertNotNull(foundFunction);
+        assertEquals("tan(x)", foundFunction.getName());
+        assertEquals("Math.tan(x)", foundFunction.getExpression());
+        assertEquals(userId1, foundFunction.getUserId());
+    }
 
-        // Добавляем несколько функций
-        for (int i = 0; i < functionNames.length; i++) {
-            Function function = new Function(
-                    functionNames[i],
-                    expressions[i],
-                    1 // test user_id
-            );
+    @Test
+    void testFindById() {
+        Integer userId1 = 1;
+        Function function = functionRepository.findById(functionId1);
+        assertNotNull(function);
+        assertEquals(functionId1, function.getId());
+        assertEquals("sin(x)", function.getName());
+        assertEquals("Math.sin(x)", function.getExpression());
+        assertEquals(userId1, function.getUserId());
+    }
 
-            Integer id = repository.insert(function);
-            assertNotNull(id, "Функция должна быть добавлена с ID");
-            assertTrue(id > 0, "ID должен быть положительным");
+    @Test
+    void testFindByIdNonExistent() {
+        Function function = functionRepository.findById(99999);
+        assertNull(function);
+    }
 
-            if (i == 0) {
-                testFunctionId = id; // Сохраняем для других тестов
-            }
+    @Test
+    void testFindAll() {
+        List<Function> functions = functionRepository.findAll();
+        assertEquals(3, functions.size());
 
-            System.out.println("Добавлена функция: " + functionNames[i] + " с ID: " + id);
+        // Проверяем, что все добавленные функции присутствуют
+        boolean foundSin = false, foundCos = false, foundX2 = false;
+        for (Function f : functions) {
+            if ("sin(x)".equals(f.getName())) foundSin = true;
+            if ("cos(x)".equals(f.getName())) foundCos = true;
+            if ("x^2".equals(f.getName())) foundX2 = true;
         }
+
+        assertTrue(foundSin);
+        assertTrue(foundCos);
+        assertTrue(foundX2);
     }
 
     @Test
-    @Order(2)
-    @DisplayName("Поиск всех функций")
-    void testFindAll() throws SQLException {
-        List<Function> functions = repository.findAll();
+    void testFindByUserId() {
+        Integer userId1 = 1;
+        Integer userId2 = 2;
+        List<Function> user1Functions = functionRepository.findByUserId(userId1);
+        assertEquals(2, user1Functions.size());
 
-        assertNotNull(functions, "Список функций не должен быть null");
-        assertFalse(functions.isEmpty(), "Должна быть хотя бы одна функция");
-        assertTrue(functions.size() >= 4, "Должно быть минимум 4 функции (мы добавили 4)");
+        List<Function> user2Functions = functionRepository.findByUserId(userId2);
+        assertEquals(1, user2Functions.size());
 
-        System.out.println("Найдено функций: " + functions.size());
-        functions.forEach(f -> System.out.println("  - " + f.getName()));
+        List<Function> nonExistentUserFunctions = functionRepository.findByUserId(999);
+        assertNotNull(nonExistentUserFunctions);
+        assertTrue(nonExistentUserFunctions.isEmpty());
     }
 
     @Test
-    @Order(3)
-    @DisplayName("Поиск функции по ID")
-    void testFindById() throws SQLException {
-        assertNotNull(testFunctionId, "Должен быть сохранен testFunctionId");
+    void testUpdate() {
+        Integer userId2 = 2;
+        Function functionToUpdate = functionRepository.findById(functionId1);
+        assertNotNull(functionToUpdate);
 
-        Function function = repository.findById(testFunctionId);
+        functionToUpdate.setName("updated_sin(x)");
+        functionToUpdate.setExpression("Math.sin(x) * 2");
+        functionToUpdate.setUserId(userId2);
 
-        assertNotNull(function, "Функция должна быть найдена");
-        assertEquals(testFunctionId, function.getId(), "ID должны совпадать");
-        assertEquals("Квадратичная функция", function.getName(), "Имя должно совпадать");
-        assertEquals("x^2 + 2x + 1", function.getExpression(), "Выражение должно совпадать");
-        assertEquals(1, function.getUserId(), "User ID должен быть 1");
+        boolean updateResult = functionRepository.update(functionToUpdate);
+        assertTrue(updateResult);
 
-        System.out.println("Найдена функция по ID " + testFunctionId + ": " + function.getName());
+        Function updatedFunction = functionRepository.findById(functionId1);
+        assertNotNull(updatedFunction);
+        assertEquals("updated_sin(x)", updatedFunction.getName());
+        assertEquals("Math.sin(x) * 2", updatedFunction.getExpression());
+        assertEquals(userId2, updatedFunction.getUserId());
     }
 
     @Test
-    @Order(4)
-    @DisplayName("Обновление функции")
-    void testUpdate() throws SQLException {
-        Function function = repository.findById(testFunctionId);
-        assertNotNull(function, "Функция должна существовать перед обновлением");
+    void testUpdateNonExistent() {
+        Function nonExistentFunction = new Function("nonexistent", "none", 999);
+        nonExistentFunction.setId(99999);
 
-        String originalName = function.getName();
-        String newName = "Обновленная квадратичная функция";
-        String newExpression = "2*x^2 + 3*x + 5";
-
-        function.setName(newName);
-        function.setExpression(newExpression);
-
-        boolean success = repository.update(function);
-        assertTrue(success, "Обновление должно быть успешным");
-
-        // Проверяем, что обновилось
-        Function updated = repository.findById(testFunctionId);
-        assertNotNull(updated);
-        assertEquals(newName, updated.getName());
-        assertEquals(newExpression, updated.getExpression());
-
-        System.out.println("Функция обновлена: " + originalName + " → " + newName);
+        boolean updateResult = functionRepository.update(nonExistentFunction);
+        assertFalse(updateResult);
     }
 
     @Test
-    @Order(6)
-    @DisplayName("Удаление функции")
-    void testDelete() throws SQLException {
-        // создаем временную функцию для удаления
-        Function tempFunction = new Function(
-                "Временная функция для удаления",
-                "x",
-                1
-        );
+    void testDelete() {
+        boolean deleteResult = functionRepository.delete(functionId2);
+        assertTrue(deleteResult);
 
-        Integer tempId = repository.insert(tempFunction);
-        assertNotNull(tempId);
+        Function deletedFunction = functionRepository.findById(functionId2);
+        assertNull(deletedFunction);
 
-        // удаляем
-        boolean deleted = repository.delete(tempId);
-        assertTrue(deleted, "Удаление должно быть успешным");
-
-        // проверяем, что удалена
-        Function found = repository.findById(tempId);
-        assertNull(found, "Функция должна быть удалена из БД");
-
-        System.out.println("Функция с ID " + tempId + " успешно удалена");
+        List<Function> functions = functionRepository.findAll();
+        assertEquals(2, functions.size());
     }
 
     @Test
-    @Order(7)
-    @DisplayName("Поиск несуществующей функции")
-    void testFindNonExistentFunction() throws SQLException {
-        Function function = repository.findById(999999);
-        assertNull(function, "Несуществующая функция должна возвращать null");
-
-        System.out.println("Поиск несуществующей функции возвращает null (корректно)");
+    void testDeleteNonExistent() {
+        boolean deleteResult = functionRepository.delete(99999);
+        assertFalse(deleteResult);
     }
 
     @Test
-    @Order(8)
-    @DisplayName("Обновление несуществующей функции")
-    void testUpdateNonExistentFunction() throws SQLException {
-        Function nonExistent = new Function("Несуществующая", "x", 1);
-        nonExistent.setId(999999);
+    void testFindAllSortedByName() {
+        Integer userId1 = 1;
+        clearFunctionsTable();
 
-        boolean success = repository.update(nonExistent);
-        assertFalse(success, "Обновление несуществующей функции должно возвращать false");
+        // Добавляем функции в разном порядке
+        functionRepository.insert(new Function("cosine", "Math.cos(x)", userId1));
+        functionRepository.insert(new Function("alpha", "x + 1", userId1));
+        functionRepository.insert(new Function("beta", "x - 1", userId1));
 
-        System.out.println("Обновление несуществующей функции возвращает false (корректно)");
+        List<Function> sortedFunctions = functionRepository.findAllSortedByName();
+
+        assertEquals(3, sortedFunctions.size());
+        assertEquals("alpha", sortedFunctions.get(0).getName());
+        assertEquals("beta", sortedFunctions.get(1).getName());
+        assertEquals("cosine", sortedFunctions.get(2).getName());
+    }
+
+    @Test
+    void testFindAllSortedByNameEmpty() {
+        clearFunctionsTable();
+
+        List<Function> sortedFunctions = functionRepository.findAllSortedByName();
+        assertNotNull(sortedFunctions);
+        assertTrue(sortedFunctions.isEmpty());
+    }
+
+    @Test
+    void testFullCrudCycle() {
+        Integer userId1 = 1;
+        Integer userId2 = 2;
+        // Create
+        Function newFunction = new Function("test_func", "x + y", userId1);
+        Integer newId = functionRepository.insert(newFunction);
+        assertNotNull(newId);
+
+        // Read
+        Function createdFunction = functionRepository.findById(newId);
+        assertNotNull(createdFunction);
+        assertEquals("test_func", createdFunction.getName());
+        assertEquals("x + y", createdFunction.getExpression());
+        assertEquals(userId1, createdFunction.getUserId());
+
+        // Update
+        createdFunction.setName("updated_func");
+        createdFunction.setExpression("x * y");
+        createdFunction.setUserId(userId2);
+        assertTrue(functionRepository.update(createdFunction));
+
+        Function updatedFunction = functionRepository.findById(newId);
+        assertEquals("updated_func", updatedFunction.getName());
+        assertEquals("x * y", updatedFunction.getExpression());
+        assertEquals(userId2, updatedFunction.getUserId());
+
+        // Delete
+        assertTrue(functionRepository.delete(newId));
+        assertNull(functionRepository.findById(newId));
+    }
+
+    @Test
+    void testFindAllAfterMultipleOperations() {
+        Integer userId1 = 1;
+        // Начальное количество
+        List<Function> initialFunctions = functionRepository.findAll();
+        int initialCount = initialFunctions.size();
+
+        // Добавляем новую функцию
+        functionRepository.insert(new Function("new_func", "x^3", userId1));
+        List<Function> afterAdd = functionRepository.findAll();
+        assertEquals(initialCount + 1, afterAdd.size());
+
+        // Удаляем функцию
+        functionRepository.delete(functionId1);
+        List<Function> afterDelete = functionRepository.findAll();
+        assertEquals(initialCount, afterDelete.size());
+    }
+
+    // Вспомогательный метод для очистки таблицы
+    private void clearFunctionsTable() {
+        List<Function> functions = functionRepository.findAll();
+        for (Function function : functions) {
+            if (function.getId() != null) {
+                functionRepository.delete(function.getId());
+            }
+        }
     }
 }

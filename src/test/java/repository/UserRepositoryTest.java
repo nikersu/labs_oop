@@ -1,197 +1,188 @@
 package repository;
 
-import models.User;
-import org.junit.jupiter.api.*;
-import java.sql.SQLException;
+import DTO.User;
+import JDBC.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@DisplayName("Тесты репозитория пользователей с генерацией данных")
-public class UserRepositoryTest {
-    private static UserRepository repository;
-    private static Integer testUserId;
+class UserRepositoryTest {
+    private UserRepository userRepository;
+    private Integer userId1;
+    private Integer userId2;
 
-    @BeforeAll
-    static void setUp() {
-        repository = new UserRepository();
+    @BeforeEach
+    void setUp() {
+        userRepository = new UserRepository();
+        // Очищаем таблицу перед тестами
+        clearUsersTable();
+        // Проверим сразу
+        List<User> allUsers = userRepository.findAll();
+        System.out.println("Всего после setUp: " + allUsers.size());
+        // Добавляем тестовых пользователей
+        userId1 = userRepository.insert(new User("user1", "hash1"));
+        userId2 = userRepository.insert(new User("user2", "hash2"));
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Очищаем таблицу после тестов
+        clearUsersTable();
     }
 
     @Test
-    @Order(1)
-    @DisplayName("Генерация и добавление разнообразных пользователей")
-    void testInsertDiverseUsers() throws SQLException {
-        // Генерация разнообразных данных пользователей
-        String[] usernames = {
-                "alice_smith",
-                "bob_jones_89",
-                "charlie.brown",
-                "diana-prince",
-                "evan_tech2024"
-        };
+    void testInsert() {
+        Integer newId = userRepository.insert(new User("new user", "new pass_hash"));
+        assertNotNull(newId);
+        assertTrue(newId > 0);
 
-        String[] passwordHashes = {
-                "$2a$10$N9qo8uLOickgx2ZMRZoMye7G7o6B7R6ZQJ5YcJm6V5Jt9VJm6V5Jt9", // bcrypt hash 1
-                "$2a$12$L9qo8uLOickgx2ZMRZoMye3G7o6B7R6ZQJ5YcJm6V5Jt9VJm6V5Jt9", // bcrypt hash 2
-                "sha256_akjf83h7f8h38fh83hf", // sha256 hash
-                "md5_93jd93jd93jd93jd",      // md5 hash
-                "pbkdf2_483hf483hf483hf"     // pbkdf2 hash
-        };
+        User foundUser = userRepository.findById(newId);
+        assertNotNull(foundUser);
+        assertEquals("new user", foundUser.getUsername());
+        assertEquals("new pass_hash", foundUser.getPasswordHash());
+    }
 
-        // Добавляем нескольких пользователей
-        for (int i = 0; i < usernames.length; i++) {
-            User user = new User(
-                    usernames[i],
-                    passwordHashes[i]
-            );
+    @Test
+    void testFindById() {
+        User user = userRepository.findById(userId1);
+        assertNotNull(user);
+        assertEquals(userId1, user.getId());
+        assertEquals("user1", user.getUsername());
+        assertEquals("hash1", user.getPasswordHash());
+    }
 
-            Integer id = repository.insert(user);
-            assertNotNull(id, "Пользователь должен быть добавлен с ID");
-            assertTrue(id > 0, "ID должен быть положительным");
+    @Test
+    void testFindByIdNonExistent() {
+        User user = userRepository.findById(99999);
+        assertNull(user);
+    }
 
-            if (i == 0) {
-                testUserId = id; // Сохраняем для других тестов
-            }
+    @Test
+    void testFindAll() {
+        List<User> users = userRepository.findAll();
 
-            System.out.println("Добавлен пользователь: " + usernames[i] + " с ID: " + id +
-                    ", хэш: " + passwordHashes[i].substring(0, 20) + "...");
+        assertEquals(2, users.size());
+
+        // Проверяем, что все добавленные пользователи присутствуют
+        boolean foundUser1 = false;
+        boolean foundUser2 = false;
+
+        for (User user : users) {
+            if ("user1".equals(user.getUsername())) foundUser1 = true;
+            if ("user2".equals(user.getUsername())) foundUser2 = true;
         }
+
+        assertTrue(foundUser1);
+        assertTrue(foundUser2);
     }
 
     @Test
-    @Order(2)
-    @DisplayName("Поиск всех пользователей")
-    void testFindAll() throws SQLException {
-        List<User> users = repository.findAll();
+    void testUpdate() {
+        User userToUpdate = userRepository.findById(userId1);
+        assertNotNull(userToUpdate);
 
-        assertNotNull(users, "Список пользователей не должен быть null");
-        assertFalse(users.isEmpty(), "Должен быть хотя бы один пользователь");
-        assertTrue(users.size() >= 5, "Должно быть минимум 5 пользователей (мы добавили 5)");
+        userToUpdate.setUsername("updated_user1");
+        userToUpdate.setPasswordHash("new_hash_123");
 
-        System.out.println("Найдено пользователей: " + users.size());
-        users.forEach(u -> System.out.println("  - ID: " + u.getId() + ", username: " + u.getUsername()));
+        boolean updateResult = userRepository.update(userToUpdate);
+        assertTrue(updateResult);
+
+        User updatedUser = userRepository.findById(userId1);
+        assertNotNull(updatedUser);
+        assertEquals("updated_user1", updatedUser.getUsername());
+        assertEquals("new_hash_123", updatedUser.getPasswordHash());
     }
 
     @Test
-    @Order(3)
-    @DisplayName("Поиск пользователя по ID")
-    void testFindById() throws SQLException {
-        assertNotNull(testUserId, "Должен быть сохранен testUserId");
+    void testUpdateNonExistent() {
+        User nonExistentUser = new User("nonexistent", "hash");
+        nonExistentUser.setId(99999);
 
-        User user = repository.findById(testUserId);
-
-        assertNotNull(user, "Пользователь должен быть найден");
-        assertEquals(testUserId, user.getId(), "ID должны совпадать");
-        assertEquals("alice_smith", user.getUsername(), "Имя пользователя должно совпадать");
-        assertTrue(user.getPasswordHash().startsWith("$2a$10$"), "Хэш пароля должен соответствовать");
-
-        System.out.println("Найден пользователь по ID " + testUserId + ": " + user.getUsername());
+        boolean updateResult = userRepository.update(nonExistentUser);
+        assertFalse(updateResult);
     }
 
     @Test
-    @Order(4)
-    @DisplayName("Обновление пользователя")
-    void testUpdate() throws SQLException {
-        User user = repository.findById(testUserId);
-        assertNotNull(user, "Пользователь должен существовать перед обновлением");
+    void testDelete() {
+        boolean deleteResult = userRepository.delete(userId2);
+        assertTrue(deleteResult);
 
-        String originalUsername = user.getUsername();
-        String newUsername = "alice_smith_updated";
-        String newPasswordHash = "$2a$12$updatedhashupdatedhashupdated";
+        User deletedUser = userRepository.findById(userId2);
+        assertNull(deletedUser);
 
-        user.setUsername(newUsername);
-        user.setPasswordHash(newPasswordHash);
-
-        boolean success = repository.update(user);
-        assertTrue(success, "Обновление должно быть успешным");
-
-        // Проверяем, что обновилось
-        User updated = repository.findById(testUserId);
-        assertNotNull(updated);
-        assertEquals(newUsername, updated.getUsername());
-        assertEquals(newPasswordHash, updated.getPasswordHash());
-
-        System.out.println("Пользователь обновлен: " + originalUsername + " → " + newUsername);
+        List<User> users = userRepository.findAll();
+        assertEquals(1, users.size());
     }
 
     @Test
-    @Order(5)
-    @DisplayName("Удаление пользователя")
-    void testDelete() throws SQLException {
-        // Создаем временного пользователя для удаления
-        User tempUser = new User(
-                "temp_user_for_deletion",
-                "$2a$10$tempHashForDeletionTest"
-        );
-
-        Integer tempId = repository.insert(tempUser);
-        assertNotNull(tempId);
-
-        // Удаляем
-        boolean deleted = repository.delete(tempId);
-        assertTrue(deleted, "Удаление должно быть успешным");
-
-        // Проверяем, что удален
-        User found = repository.findById(tempId);
-        assertNull(found, "Пользователь должен быть удален из БД");
-
-        System.out.println("Пользователь с ID " + tempId + " успешно удален");
+    void testDeleteNonExistent() {
+        boolean deleteResult = userRepository.delete(99999);
+        assertFalse(deleteResult);
     }
 
     @Test
-    @Order(6)
-    @DisplayName("Поиск несуществующего пользователя")
-    void testFindNonExistentUser() throws SQLException {
-        User user = repository.findById(999999);
-        assertNull(user, "Несуществующий пользователь должен возвращать null");
+    void testFindAllSortedByUsername() {
+        // Добавляем пользователей в разном порядке
+        clearUsersTable();
 
-        System.out.println("Поиск несуществующего пользователя возвращает null (корректно)");
+        userRepository.insert(new User("charlie", "hash_c"));
+        userRepository.insert(new User("alice", "hash_a"));
+        userRepository.insert(new User("bob", "hash_b"));
+
+        List<User> sortedUsers = userRepository.findAllSortedByUsername();
+
+        assertEquals(3, sortedUsers.size());
+        assertEquals("alice", sortedUsers.get(0).getUsername());
+        assertEquals("bob", sortedUsers.get(1).getUsername());
+        assertEquals("charlie", sortedUsers.get(2).getUsername());
     }
 
     @Test
-    @Order(7)
-    @DisplayName("Обновление несуществующего пользователя")
-    void testUpdateNonExistentUser() throws SQLException {
-        User nonExistent = new User("non_existent", "hash");
-        nonExistent.setId(999999);
+    void testFindAllSortedByUsernameEmpty() {
+        clearUsersTable();
 
-        boolean success = repository.update(nonExistent);
-        assertFalse(success, "Обновление несуществующего пользователя должно возвращать false");
-
-        System.out.println("Обновление несуществующего пользователя возвращает false (корректно)");
+        List<User> sortedUsers = userRepository.findAllSortedByUsername();
+        assertNotNull(sortedUsers);
+        assertTrue(sortedUsers.isEmpty());
     }
+
     @Test
-    @Order(8)
-    @DisplayName("Генерация пользователей с крайними значениями")
-    void testInsertEdgeCases() throws SQLException {
-        // Тест с разными edge case данными
+    void testFullCrudCycle() {
+        // Create
+        User newUser = new User("test user", "test_hash");
+        Integer newId = userRepository.insert(newUser);
+        assertNotNull(newId);
 
-        // 1. Очень короткое имя
-        User shortUser = new User("a", "$2a$10$short");
-        Integer shortId = repository.insert(shortUser);
-        assertNotNull(shortId);
+        // Read
+        User createdUser = userRepository.findById(newId);
+        assertNotNull(createdUser);
+        assertEquals("test user", createdUser.getUsername());
+        assertEquals("test_hash", createdUser.getPasswordHash());
 
-        // 2. Имя с максимальной длиной (предполагаем 50 chars)
-        String longUsername = "u".repeat(50);
-        User longUser = new User(longUsername, "$2a$10$long");
-        Integer longId = repository.insert(longUser);
-        assertNotNull(longId);
+        // Update
+        createdUser.setUsername("updated user");
+        createdUser.setPasswordHash("updated_hash");
+        assertTrue(userRepository.update(createdUser));
 
-        // 3. Имя со спецсимволами
-        User specialUser = new User("user-name.with_dots", "$2a$10$special");
-        Integer specialId = repository.insert(specialUser);
-        assertNotNull(specialId);
+        User updatedUser = userRepository.findById(newId);
+        assertEquals("updated user", updatedUser.getUsername());
+        assertEquals("updated_hash", updatedUser.getPasswordHash());
 
-        // 4. Длинный хэш пароля
-        String longHash = "$2a$10$" + "x".repeat(200);
-        User longHashUser = new User("long_hash_user", longHash);
-        Integer longHashId = repository.insert(longHashUser);
-        assertNotNull(longHashId);
+        // Delete
+        assertTrue(userRepository.delete(newId));
+        assertNull(userRepository.findById(newId));
+    }
 
-        System.out.println("Добавлены пользователи с крайними значениями:");
-        System.out.println("  - Короткое имя: ID " + shortId);
-        System.out.println("  - Длинное имя (50 chars): ID " + longId);
-        System.out.println("  - Спецсимволы в имени: ID " + specialId);
-        System.out.println("  - Длинный хэш: ID " + longHashId);
+    // Вспомогательный метод для очистки таблицы
+    private void clearUsersTable() {
+        // Получаем всех пользователей и удаляем их
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            if (user.getId() != null) {
+                userRepository.delete(user.getId());
+            }
+        }
     }
 }
