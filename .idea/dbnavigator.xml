@@ -54,11 +54,6 @@ DROP TABLE IF EXISTS users CASCADE;]]></console>
   <component name="DBNavigator.Project.FileConnectionMappingManager">
     <mapping file-url="file://$PROJECT_DIR$/src/main/resources/scripts" connection-id="63120a17-c1cd-4d6a-ad6a-4ebf5d3e5a2b" session-id="MAIN" current-schema="public" />
     <mapping file-url="file://$PROJECT_DIR$/src/test/java/repository" connection-id="63120a17-c1cd-4d6a-ad6a-4ebf5d3e5a2b" session-id="MAIN" current-schema="public" />
-    <mapping file-url="file://$PROJECT_DIR$/src/main/resources/scripts/functions/delete_function.sql" connection-id="63120a17-c1cd-4d6a-ad6a-4ebf5d3e5a2b" session-id="MAIN" current-schema="public" />
-    <mapping file-url="file://$PROJECT_DIR$/src/main/resources/scripts/create_functions_table.sql" connection-id="63120a17-c1cd-4d6a-ad6a-4ebf5d3e5a2b" session-id="MAIN" current-schema="public" />
-    <mapping file-url="file://$PROJECT_DIR$/src/main/resources/scripts/create_users_table.sql" connection-id="63120a17-c1cd-4d6a-ad6a-4ebf5d3e5a2b" session-id="MAIN" current-schema="public" />
-    <mapping file-url="file://$PROJECT_DIR$/src/main/resources/scripts/points" connection-id="63120a17-c1cd-4d6a-ad6a-4ebf5d3e5a2b" session-id="MAIN" current-schema="public" />
-    <mapping file-url="file://$PROJECT_DIR$/src/main/resources/scripts/create_points_table.sql" connection-id="63120a17-c1cd-4d6a-ad6a-4ebf5d3e5a2b" session-id="MAIN" current-schema="public" />
   </component>
   <component name="DBNavigator.Project.ObjectQuickFilterManager">
     <last-used-operator value="EQUAL" />

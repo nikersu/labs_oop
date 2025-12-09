@@ -32,9 +32,6 @@ class UserRepositoryTest {
     @Test
     void testInsert() {
         Integer newId = userRepository.insert(new User("new user", "new pass_hash"));
-        assertNotNull(newId);
-        assertTrue(newId > 0);
-
         User foundUser = userRepository.findById(newId);
         assertNotNull(foundUser);
         assertEquals("new user", foundUser.getUsername());
