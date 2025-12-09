@@ -44,7 +44,9 @@ DROP TABLE IF EXISTS users CASCADE;]]></console>
     <connection id="63120a17-c1cd-4d6a-ad6a-4ebf5d3e5a2b" />
   </component>
   <component name="DBNavigator.Project.DatasetFilterManager">
+    <filter-actions connection-id="63120a17-c1cd-4d6a-ad6a-4ebf5d3e5a2b" dataset="public.users" active-filter-id="" />
     <filter-actions connection-id="63120a17-c1cd-4d6a-ad6a-4ebf5d3e5a2b" dataset="public.functions" active-filter-id="" />
+    <filter-actions connection-id="63120a17-c1cd-4d6a-ad6a-4ebf5d3e5a2b" dataset="public.points" active-filter-id="" />
   </component>
   <component name="DBNavigator.Project.ExecutionManager">
     <retain-sticky-names value="false" />

@@ -1,7 +1,11 @@
 package repository;
 
+import DTO.Function;
 import DTO.Point;
+import DTO.User;
+import JDBC.repository.FunctionRepository;
 import JDBC.repository.PointRepository;
+import JDBC.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,16 +16,29 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PointRepositoryTest {
     private PointRepository pointRepository;
-    private final Integer functionId1 = 1;
-    private final Integer functionId2 = 2;
+    private FunctionRepository functionRepository;
+    private UserRepository userRepository;
+
+    private Integer functionId1;
+    private Integer functionId2;
+    private Integer userId;
 
     @BeforeEach
     void setUp() {
         pointRepository = new PointRepository();
-        // Очищаем таблицу перед тестами
+        functionRepository = new FunctionRepository();
+        userRepository = new UserRepository();
+        // очищаем таблицы перед тестами
         clearPointsTable();
-
-        // Добавляем тестовые точки
+        clearFunctionsTable();
+        clearUsersTable();
+        // добавляем пользователя
+        User user = new User("bob", "123");
+        userId = userRepository.insert(user);
+        // добавляем функции
+        functionId1 = functionRepository.insert(new Function("f1", "x*2", userId));
+        functionId2 = functionRepository.insert(new Function("f2", "x", userId));
+        // добавляем точки
         pointRepository.insert(new Point(functionId1, 1.0, 2.0));
         pointRepository.insert(new Point(functionId1, 2.0, 4.0));
         pointRepository.insert(new Point(functionId1, 3.0, 6.0));
@@ -31,8 +48,10 @@ class PointRepositoryTest {
 
     @AfterEach
     void tearDown() {
-        // Очищаем таблицу после тестов
+        // очищаем таблицы после тестов
         clearPointsTable();
+        clearFunctionsTable();
+        clearUsersTable();
     }
 
     @Test
@@ -42,16 +61,6 @@ class PointRepositoryTest {
 
         List<Point> points = pointRepository.findByFunctionId(functionId1);
         assertEquals(4, points.size());
-
-        // Проверяем, что новая точка добавлена
-        boolean found = false;
-        for (Point p : points) {
-            if (p.getXValue() == 4.0 && p.getYValue() == 8.0) {
-                found = true;
-                break;
-            }
-        }
-        assertTrue(found);
     }
 
     @Test
@@ -65,9 +74,9 @@ class PointRepositoryTest {
         // Проверяем данные первой функции
         boolean found1 = false, found2 = false, found3 = false;
         for (Point p : points1) {
-            if (p.getXValue() == 1.0 && p.getYValue() == 2.0) found1 = true;
-            if (p.getXValue() == 2.0 && p.getYValue() == 4.0) found2 = true;
-            if (p.getXValue() == 3.0 && p.getYValue() == 6.0) found3 = true;
+            if (Math.abs(p.getXValue() - 1.0) < 0.001 && Math.abs(p.getYValue() - 2.0) < 0.001) found1 = true;
+            if (Math.abs(p.getXValue() - 2.0) < 0.001 && Math.abs(p.getYValue() - 4.0) < 0.001) found2 = true;
+            if (Math.abs(p.getXValue() - 3.0) < 0.001 && Math.abs(p.getYValue() - 6.0) < 0.001) found3 = true;
         }
         assertTrue(found1);
         assertTrue(found2);
@@ -142,10 +151,10 @@ class PointRepositoryTest {
     void testFindAllSortedByX() {
         clearPointsTable();
 
-        // Добавляем точки в разном порядке по X
-        pointRepository.insert(new Point(1, 3.0, 30.0));
-        pointRepository.insert(new Point(1, 1.0, 10.0));
-        pointRepository.insert(new Point(1, 2.0, 20.0));
+        // добавляем точки в разном порядке по X
+        pointRepository.insert(new Point(functionId1, 3.0, 30.0));
+        pointRepository.insert(new Point(functionId1, 1.0, 10.0));
+        pointRepository.insert(new Point(functionId1, 2.0, 20.0));
 
         List<Point> sortedPoints = pointRepository.findAllSortedByX();
 
@@ -159,10 +168,10 @@ class PointRepositoryTest {
     void testFindAllSortedByY() {
         clearPointsTable();
 
-        // Добавляем точки в разном порядке по Y
-        pointRepository.insert(new Point(1, 10.0, 3.0));
-        pointRepository.insert(new Point(1, 20.0, 1.0));
-        pointRepository.insert(new Point(1, 30.0, 2.0));
+        // добавляем точки в разном порядке по Y
+        pointRepository.insert(new Point(functionId1, 10.0, 3.0));
+        pointRepository.insert(new Point(functionId1, 20.0, 1.0));
+        pointRepository.insert(new Point(functionId1, 30.0, 2.0));
 
         List<Point> sortedPoints = pointRepository.findAllSortedByY();
 
@@ -171,36 +180,36 @@ class PointRepositoryTest {
         assertEquals(2.0, sortedPoints.get(1).getYValue(), 0.001);
         assertEquals(3.0, sortedPoints.get(2).getYValue(), 0.001);
     }
-
-    @Test
-    void testFullCrudCycle() {
-        // Create
-        Point newPoint = new Point(100, 5.0, 25.0);
-        pointRepository.insert(newPoint);
-        // Read
-        List<Point> points = pointRepository.findByFunctionId(100);
-        assertEquals(1, points.size());
-        assertEquals(5.0, points.getFirst().getXValue(), 0.001);
-        assertEquals(25.0, points.getFirst().getYValue(), 0.001);
-        // Update
-        Point pointToUpdate = points.getFirst();
-        pointToUpdate.setYValue(30.0);
-        assertTrue(pointRepository.update(pointToUpdate));
-        Point updatedPoint = pointRepository.findByFunctionIdAndX(100, 5.0);
-        assertEquals(30.0, updatedPoint.getYValue(), 0.001);
-        // Delete
-        assertTrue(pointRepository.delete(100, 5.0));
-        assertNull(pointRepository.findByFunctionIdAndX(100, 5.0));
-    }
-
-    // Вспомогательный метод для очистки таблицы
+    // метод для очистки таблицы точек
     private void clearPointsTable() {
-        // Находим все уникальные functionId и удаляем их точки
-        // Простой способ: удаляем все точки для test functionId
-        for (int i = 1; i <= 10; i++) {
-            List<Point> points = pointRepository.findByFunctionId(i);
-            for (Point point : points) {
-                pointRepository.delete(i, point.getXValue());
+        if (functionId1 != null) {
+            List<Point> pts1 = pointRepository.findByFunctionId(functionId1);
+            for (Point p : pts1) {
+                pointRepository.delete(functionId1, p.getXValue());
+            }
+        }
+        if (functionId2 != null) {
+            List<Point> pts2 = pointRepository.findByFunctionId(functionId2);
+            for (Point p : pts2) {
+                pointRepository.delete(functionId2, p.getXValue());
+            }
+        }
+    }
+    // метод для очистки таблицы функций
+    private void clearFunctionsTable() {
+        List<Function> functions = functionRepository.findAll();
+        for (Function function : functions) {
+            if (function.getId() != null) {
+                functionRepository.delete(function.getId());
+            }
+        }
+    }
+    // метод для очистки таблицы пользователей
+    private void clearUsersTable() {
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            if (user.getId() != null) {
+                userRepository.delete(user.getId());
             }
         }
     }

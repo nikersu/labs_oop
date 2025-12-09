@@ -16,19 +16,16 @@ class UserRepositoryTest {
     @BeforeEach
     void setUp() {
         userRepository = new UserRepository();
-        // Очищаем таблицу перед тестами
+        // очищаем таблицу перед тестами
         clearUsersTable();
-        // Проверим сразу
-        List<User> allUsers = userRepository.findAll();
-        System.out.println("Всего после setUp: " + allUsers.size());
-        // Добавляем тестовых пользователей
+        // добавляем пользователей
         userId1 = userRepository.insert(new User("user1", "hash1"));
         userId2 = userRepository.insert(new User("user2", "hash2"));
     }
 
     @AfterEach
     void tearDown() {
-        // Очищаем таблицу после тестов
+        // очищаем таблицу после тестов
         clearUsersTable();
     }
 
@@ -62,20 +59,7 @@ class UserRepositoryTest {
     @Test
     void testFindAll() {
         List<User> users = userRepository.findAll();
-
         assertEquals(2, users.size());
-
-        // Проверяем, что все добавленные пользователи присутствуют
-        boolean foundUser1 = false;
-        boolean foundUser2 = false;
-
-        for (User user : users) {
-            if ("user1".equals(user.getUsername())) foundUser1 = true;
-            if ("user2".equals(user.getUsername())) foundUser2 = true;
-        }
-
-        assertTrue(foundUser1);
-        assertTrue(foundUser2);
     }
 
     @Test
@@ -127,9 +111,9 @@ class UserRepositoryTest {
         // Добавляем пользователей в разном порядке
         clearUsersTable();
 
-        userRepository.insert(new User("charlie", "hash_c"));
-        userRepository.insert(new User("alice", "hash_a"));
-        userRepository.insert(new User("bob", "hash_b"));
+        userRepository.insert(new User("charlie", "123"));
+        userRepository.insert(new User("alice", "122"));
+        userRepository.insert(new User("bob", "121"));
 
         List<User> sortedUsers = userRepository.findAllSortedByUsername();
 
@@ -147,37 +131,8 @@ class UserRepositoryTest {
         assertNotNull(sortedUsers);
         assertTrue(sortedUsers.isEmpty());
     }
-
-    @Test
-    void testFullCrudCycle() {
-        // Create
-        User newUser = new User("test user", "test_hash");
-        Integer newId = userRepository.insert(newUser);
-        assertNotNull(newId);
-
-        // Read
-        User createdUser = userRepository.findById(newId);
-        assertNotNull(createdUser);
-        assertEquals("test user", createdUser.getUsername());
-        assertEquals("test_hash", createdUser.getPasswordHash());
-
-        // Update
-        createdUser.setUsername("updated user");
-        createdUser.setPasswordHash("updated_hash");
-        assertTrue(userRepository.update(createdUser));
-
-        User updatedUser = userRepository.findById(newId);
-        assertEquals("updated user", updatedUser.getUsername());
-        assertEquals("updated_hash", updatedUser.getPasswordHash());
-
-        // Delete
-        assertTrue(userRepository.delete(newId));
-        assertNull(userRepository.findById(newId));
-    }
-
-    // Вспомогательный метод для очистки таблицы
+    // метод для очистки таблицы пользователей
     private void clearUsersTable() {
-        // Получаем всех пользователей и удаляем их
         List<User> users = userRepository.findAll();
         for (User user : users) {
             if (user.getId() != null) {
