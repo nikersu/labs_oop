@@ -17,6 +17,7 @@ public class Mapper {
         user.setId(rs.getInt("id"));
         user.setUsername(rs.getString("username"));
         user.setPasswordHash(rs.getString("password_hash"));
+        user.setRole(rs.getString("role"));
         return user;
     }
 

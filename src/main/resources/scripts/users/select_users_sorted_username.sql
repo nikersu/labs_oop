@@ -1,1 +1,1 @@
-SELECT id, username, password_hash FROM users ORDER BY username ASC;
+SELECT id, username, password_hash, role FROM users ORDER BY username ASC;

@@ -58,6 +58,20 @@ class UserRepositoryTest {
         List<User> users = userRepository.findAll();
         assertEquals(2, users.size());
     }
+    @Test
+    void testFindByUsername() {
+        User foundUser = userRepository.findByUsername("user1");
+        assertNotNull(foundUser);
+        assertEquals(userId1, foundUser.getId());
+        assertEquals("user1", foundUser.getUsername());
+        assertEquals("hash1", foundUser.getPasswordHash());
+    }
+
+    @Test
+    void testFindByUsernameNonExistent() {
+        User foundUser = userRepository.findByUsername("nonexistent_user");
+        assertNull(foundUser);
+    }
 
     @Test
     void testUpdate() {

@@ -21,6 +21,7 @@ public class UserRepository {
              )) {
             stmt.setString(1, user.getUsername());
             stmt.setString(2, user.getPasswordHash());
+            stmt.setString(3, user.getRole());
             stmt.executeUpdate();
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
@@ -36,6 +37,23 @@ public class UserRepository {
             logger.error("Error when adding user {}: {}", user.getUsername(), e.getMessage());
             throw new RuntimeException("Failed to insert user", e);
         }
+    }
+    // поиск пользователя по имени
+    public User findByUsername(String username) {
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(
+                     SqlHelper.loadSqlFromFile("scripts/users/select_user_username.sql")
+             )) {
+            stmt.setString(1, username);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return Mapper.mapToUser(rs);
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Ошибка поиска пользователя по username: {}", username, e);
+        }
+        return null;
     }
 
     // получение всех пользователей
@@ -107,7 +125,8 @@ public class UserRepository {
              )) {
             stmt.setString(1, user.getUsername());
             stmt.setString(2, user.getPasswordHash());
-            stmt.setInt(3, user.getId());
+            stmt.setString(3, user.getRole());
+            stmt.setInt(4, user.getId());
             int affectedRows = stmt.executeUpdate();
             boolean success = affectedRows > 0;
             logger.info("Operation completed: user {} updated", success ? "" : "not ");

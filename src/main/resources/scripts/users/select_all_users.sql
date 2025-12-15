@@ -1,1 +1,1 @@
-SELECT id, username, password_hash FROM users;
+SELECT id, username, password_hash, role FROM users;
