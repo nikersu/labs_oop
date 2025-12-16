@@ -66,5 +66,15 @@ public class PointEntity {
     public void setYValue(double yValue) {
         this.yValue = yValue;
     }
+
+    // Convenience alias for tests expecting getY()/setY()
+    public double getY() {
+        return yValue;
+    }
+
+    public void setY(double y) {
+        this.yValue = y;
+    }
 }
+
 
