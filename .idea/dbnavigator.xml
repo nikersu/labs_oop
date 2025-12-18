@@ -27,8 +27,7 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="63120a17-c1cd-4d6a-ad6a-4ebf5d3e5a2b">
-      <console name="Connection" type="STANDARD" schema="public" session="Main"><![CDATA[INSERT INTO users (username, password_hash, role)
-VALUES ('admin', 'admin123', 'ADMIN');]]></console>
+      <console name="Connection" type="STANDARD" schema="public" session="Main"><![CDATA[DROP TABLE IF EXISTS functions CASCADE;]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseEditorStateManager">

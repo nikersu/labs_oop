@@ -69,7 +69,7 @@
         </dependency>
     </dependencies>
     <build>
-        <finalName>labs_oop</finalName>
+        <finalName>ROOT</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
