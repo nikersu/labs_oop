@@ -3,13 +3,14 @@ package services;
 import entities.FunctionEntity;
 import entities.PointEntity;
 import entities.PointId;
+import repositories.FunctionRepository;
+import repositories.PointRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import repositories.FunctionRepository;
-import repositories.PointRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -23,36 +24,43 @@ public class PointService {
         this.functionRepository = functionRepository;
     }
 
-    public PointEntity createPoint(Long functionId, Double xValue, Double yValue) {
-        FunctionEntity function = functionRepository.findById(functionId)
-                .orElseThrow(() -> new RuntimeException("Function not found with id: " + functionId));
-        PointEntity point = new PointEntity(function, xValue, yValue);
-        return pointRepository.save(point);
+    public List<PointEntity> findAll() {
+        return pointRepository.findAll();
     }
 
-    public List<PointEntity> getPointsByFunctionId(Long functionId) {
+    public Optional<PointEntity> findById(Long functionId, Double xValue) {
+        return pointRepository.findById(new PointId(functionId, xValue));
+    }
+
+    public List<PointEntity> findByFunctionId(Long functionId) {
         return pointRepository.findByFunctionId(functionId);
     }
 
-    public List<PointEntity> getAllPointsSortedByX() {
-        return pointRepository.findAll(Sort.by("id.xValue"));
+    public List<PointEntity> findByFunctionIdAndXValueBetween(Long functionId, Double fromX, Double toX, Sort sort) {
+        return pointRepository.findByFunctionIdAndIdXValueBetween(functionId, fromX, toX, sort);
     }
 
-    public List<PointEntity> getAllPointsSortedByY() {
-        return pointRepository.findAll(Sort.by("yValue"));
-    }
-
-    public PointEntity updatePoint(Long functionId, Double xValue, Double yValue) {
-        PointId pointId = new PointId(functionId, xValue);
-        PointEntity point = pointRepository.findById(pointId)
-                .orElseThrow(() -> new RuntimeException("Point not found"));
-        point.setYValue(yValue);
+    public PointEntity save(PointEntity point) {
         return pointRepository.save(point);
     }
 
-    public void deletePoint(Long functionId, Double xValue) {
-        PointId pointId = new PointId(functionId, xValue);
-        pointRepository.deleteById(pointId);
+    public PointEntity createPoint(Long functionId, Double xValue, Double yValue) {
+        Optional<FunctionEntity> functionOpt = functionRepository.findById(functionId);
+        if (functionOpt.isEmpty()) {
+            throw new IllegalArgumentException("Function not found with id: " + functionId);
+        }
+        PointEntity point = new PointEntity(functionOpt.get(), xValue, yValue);
+        return pointRepository.save(point);
+    }
+
+    public void deleteById(Long functionId, Double xValue) {
+        pointRepository.deleteById(new PointId(functionId, xValue));
+    }
+
+    public boolean existsById(Long functionId, Double xValue) {
+        return pointRepository.existsById(new PointId(functionId, xValue));
     }
 }
+
+
 

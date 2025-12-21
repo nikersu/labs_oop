@@ -1,10 +1,16 @@
 package dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.util.List;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class FunctionDto {
     private Long id;
     private String name;
     private String expression;
     private Long userId;
+    private List<PointDto> points;
 
     public FunctionDto() {
     }
@@ -47,5 +53,15 @@ public class FunctionDto {
     public void setUserId(Long userId) {
         this.userId = userId;
     }
+
+    public List<PointDto> getPoints() {
+        return points;
+    }
+
+    public void setPoints(List<PointDto> points) {
+        this.points = points;
+    }
 }
+
+
 

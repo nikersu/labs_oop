@@ -2,11 +2,11 @@ package services;
 
 import entities.FunctionEntity;
 import entities.UserEntity;
+import repositories.FunctionRepository;
+import repositories.UserRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import repositories.FunctionRepository;
-import repositories.UserRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,48 +23,43 @@ public class FunctionService {
         this.userRepository = userRepository;
     }
 
-    public FunctionEntity createFunction(String name, String expression, Long userId) {
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-        FunctionEntity function = new FunctionEntity(name, expression, user);
-        return functionRepository.save(function);
-    }
-
-    public List<FunctionEntity> getAllFunctions() {
+    public List<FunctionEntity> findAll() {
         return functionRepository.findAll();
     }
 
-    public List<FunctionEntity> getAllFunctionsSorted() {
-        return functionRepository.findAll(Sort.by("name"));
-    }
-
-    public Optional<FunctionEntity> getFunctionById(Long id) {
+    public Optional<FunctionEntity> findById(Long id) {
         return functionRepository.findById(id);
     }
 
-    public List<FunctionEntity> getFunctionsByUserId(Long userId) {
+    public List<FunctionEntity> findByUserId(Long userId) {
         return functionRepository.findByUserId(userId);
     }
 
-    public FunctionEntity updateFunction(Long id, String name, String expression, Long userId) {
-        FunctionEntity function = functionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Function not found with id: " + id));
-        if (name != null) {
-            function.setName(name);
-        }
-        if (expression != null) {
-            function.setExpression(expression);
-        }
-        if (userId != null) {
-            UserEntity user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
-            function.setUser(user);
-        }
+    public List<FunctionEntity> findByUserIdAndNameContaining(Long userId, String nameLike, Sort sort) {
+        return functionRepository.findByUserIdAndNameContainingIgnoreCase(userId, nameLike, sort);
+    }
+
+    public FunctionEntity save(FunctionEntity function) {
         return functionRepository.save(function);
     }
 
-    public void deleteFunction(Long id) {
+    public FunctionEntity createFunction(String name, String expression, Long userId) {
+        Optional<UserEntity> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            throw new IllegalArgumentException("User not found with id: " + userId);
+        }
+        FunctionEntity function = new FunctionEntity(name, expression, userOpt.get());
+        return functionRepository.save(function);
+    }
+
+    public void deleteById(Long id) {
         functionRepository.deleteById(id);
     }
+
+    public boolean existsById(Long id) {
+        return functionRepository.existsById(id);
+    }
 }
+
+
 

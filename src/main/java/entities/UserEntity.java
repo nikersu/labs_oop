@@ -25,9 +25,6 @@ public class UserEntity {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Column(name = "role", nullable = false)
-    private String role = "USER";
-
     @OneToMany(mappedBy = "user", orphanRemoval = true)
     private List<FunctionEntity> functions = new ArrayList<>();
 
@@ -57,14 +54,6 @@ public class UserEntity {
 
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
     }
 
     public List<FunctionEntity> getFunctions() {

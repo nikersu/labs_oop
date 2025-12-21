@@ -1,5 +1,8 @@
 package dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PointDto {
     private Long functionId;
     private Double xValue;
@@ -38,4 +41,6 @@ public class PointDto {
         this.yValue = yValue;
     }
 }
+
+
 

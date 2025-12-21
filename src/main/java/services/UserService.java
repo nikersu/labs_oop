@@ -1,10 +1,9 @@
 package services;
 
 import entities.UserEntity;
-import org.springframework.data.domain.Sort;
+import repositories.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import repositories.UserRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,43 +18,30 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public UserEntity createUser(String username, String passwordHash, String role) {
-        UserEntity user = new UserEntity(username, passwordHash);
-        if (role != null) {
-            user.setRole(role);
-        }
-        return userRepository.save(user);
-    }
-
-    public List<UserEntity> getAllUsers() {
+    public List<UserEntity> findAll() {
         return userRepository.findAll();
     }
 
-    public List<UserEntity> getAllUsersSorted() {
-        return userRepository.findAll(Sort.by("username"));
-    }
-
-    public Optional<UserEntity> getUserById(Long id) {
+    public Optional<UserEntity> findById(Long id) {
         return userRepository.findById(id);
     }
 
-    public UserEntity updateUser(Long id, String username, String passwordHash, String role) {
-        UserEntity user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
-        if (username != null) {
-            user.setUsername(username);
-        }
-        if (passwordHash != null) {
-            user.setPasswordHash(passwordHash);
-        }
-        if (role != null) {
-            user.setRole(role);
-        }
+    public Optional<UserEntity> findByUsername(String username) {
+        return userRepository.findByUsername(username);
+    }
+
+    public UserEntity save(UserEntity user) {
         return userRepository.save(user);
     }
 
-    public void deleteUser(Long id) {
+    public void deleteById(Long id) {
         userRepository.deleteById(id);
     }
+
+    public boolean existsById(Long id) {
+        return userRepository.existsById(id);
+    }
 }
+
+
 
