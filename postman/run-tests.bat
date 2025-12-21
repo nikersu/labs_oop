@@ -15,20 +15,21 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 REM Проверка наличия файлов
-if not exist "LabsOOP.postman_collection.json" (
+set SCRIPT_DIR=%~dp0
+if not exist "%SCRIPT_DIR%LabsOOP.postman_collection.json" (
     echo Ошибка: файл коллекции LabsOOP.postman_collection.json не найден
     exit /b 1
 )
 
-if not exist "LabsOOP.postman_environment.json" (
+if not exist "%SCRIPT_DIR%LabsOOP.postman_environment.json" (
     echo Ошибка: файл окружения LabsOOP.postman_environment.json не найден
     exit /b 1
 )
 
 REM Запуск тестов
 echo Запуск тестов...
-newman run LabsOOP.postman_collection.json ^
-    -e LabsOOP.postman_environment.json ^
+newman run "%SCRIPT_DIR%LabsOOP.postman_collection.json" ^
+    -e "%SCRIPT_DIR%LabsOOP.postman_environment.json" ^
     --reporters cli,json ^
     --reporter-json-export newman-report.json
 
