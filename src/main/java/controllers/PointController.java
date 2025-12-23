@@ -2,9 +2,12 @@ package controllers;
 
 import dto.PointDto;
 import entities.PointEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import services.PointService;
 
@@ -15,6 +18,8 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/points")
 public class PointController {
 
+    private static final Logger logger = LoggerFactory.getLogger(PointController.class);
+
     private final PointService pointService;
 
     public PointController(PointService pointService) {
@@ -22,6 +27,7 @@ public class PointController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<PointDto>> getAllPoints() {
         List<PointDto> points = pointService.findAll().stream()
                 .map(this::toDto)
@@ -30,6 +36,7 @@ public class PointController {
     }
 
     @GetMapping("/function/{functionId}")
+    @PreAuthorize("@accessService.canAccessFunction(#functionId, authentication)")
     public ResponseEntity<List<PointDto>> getPointsByFunctionId(@PathVariable Long functionId) {
         List<PointDto> points = pointService.findByFunctionId(functionId).stream()
                 .map(this::toDto)
@@ -38,6 +45,7 @@ public class PointController {
     }
 
     @GetMapping("/function/{functionId}/range")
+    @PreAuthorize("@accessService.canAccessFunction(#functionId, authentication)")
     public ResponseEntity<List<PointDto>> getPointsByFunctionIdAndRange(
             @PathVariable Long functionId,
             @RequestParam(required = false) Double fromX,
@@ -54,6 +62,7 @@ public class PointController {
     }
 
     @GetMapping("/function/{functionId}/x/{xValue}")
+    @PreAuthorize("@accessService.canAccessFunction(#functionId, authentication)")
     public ResponseEntity<PointDto> getPoint(@PathVariable Long functionId, @PathVariable Double xValue) {
         return pointService.findById(functionId, xValue)
                 .map(point -> ResponseEntity.ok(toDto(point)))
@@ -61,16 +70,19 @@ public class PointController {
     }
 
     @PostMapping
+    @PreAuthorize("@accessService.canAccessFunction(#pointDto.functionId, authentication)")
     public ResponseEntity<PointDto> createPoint(@RequestBody PointDto pointDto) {
         PointEntity point = pointService.createPoint(
                 pointDto.getFunctionId(),
                 pointDto.getXValue(),
                 pointDto.getYValue()
         );
+        logger.info("Point created via API. functionId={}, xValue={}", point.getFunction().getId(), point.getXValue());
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(point));
     }
 
     @PutMapping("/function/{functionId}/x/{xValue}")
+    @PreAuthorize("@accessService.canAccessFunction(#functionId, authentication)")
     public ResponseEntity<PointDto> updatePoint(
             @PathVariable Long functionId,
             @PathVariable Double xValue,
@@ -79,15 +91,18 @@ public class PointController {
                 .map(point -> {
                     point.setYValue(pointDto.getYValue());
                     PointEntity updated = pointService.save(point);
+                    logger.info("Point updated via API. functionId={}, xValue={}", updated.getFunction().getId(), updated.getXValue());
                     return ResponseEntity.ok(toDto(updated));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/function/{functionId}/x/{xValue}")
+    @PreAuthorize("@accessService.canAccessFunction(#functionId, authentication)")
     public ResponseEntity<Void> deletePoint(@PathVariable Long functionId, @PathVariable Double xValue) {
         if (pointService.existsById(functionId, xValue)) {
             pointService.deleteById(functionId, xValue);
+            logger.info("Point deleted via API. functionId={}, xValue={}", functionId, xValue);
             return ResponseEntity.noContent().build();
         }
         return ResponseEntity.notFound().build();
@@ -101,6 +116,3 @@ public class PointController {
         );
     }
 }
-
-
-

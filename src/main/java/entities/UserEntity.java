@@ -7,6 +7,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +27,10 @@ public class UserEntity {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private Role role = Role.USER;
+
     @OneToMany(mappedBy = "user", orphanRemoval = true)
     private List<FunctionEntity> functions = new ArrayList<>();
 
@@ -34,6 +40,12 @@ public class UserEntity {
     public UserEntity(String username, String passwordHash) {
         this.username = username;
         this.passwordHash = passwordHash;
+    }
+
+    public UserEntity(String username, String passwordHash, Role role) {
+        this.username = username;
+        this.passwordHash = passwordHash;
+        this.role = role == null ? Role.USER : role;
     }
 
     public Long getId() {
@@ -56,6 +68,14 @@ public class UserEntity {
         this.passwordHash = passwordHash;
     }
 
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role == null ? Role.USER : role;
+    }
+
     public List<FunctionEntity> getFunctions() {
         return functions;
     }
@@ -64,4 +84,3 @@ public class UserEntity {
         this.functions = functions;
     }
 }
-
